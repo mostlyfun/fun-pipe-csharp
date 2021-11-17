@@ -4,11 +4,15 @@
     <TargetFramework>net6.0</TargetFramework>
     <LangVersion>latest</LangVersion>
     <RootNamespace>Fun</RootNamespace>
+    <PackageId>fun-pipe</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>mostlyfun</Authors>
     <Company>mostlyfun</Company>
-    <Description>Functional pipe methods for csharp.</Description>
+    <Description>Functional pipe methods for csharp to allow for concise and expressive method chaining.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl></PackageProjectUrl>
     <RepositoryUrl>https://github.com/mostlyfun/fun-pipe-csharp</RepositoryUrl>
+    <RespositoryType>git</RespositoryType>
     <PackageTags>Pipe, Pipe Operator, Functional, Chain, Function, Lambda, Delegate</PackageTags>
   </PropertyGroup>
 
