@@ -1,9 +1,15 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <LangVersion>latest</LangVersion>
     <RootNamespace>Fun</RootNamespace>
+    <Company>mostlyfun</Company>
+    <Description>Functional pipe methods for csharp.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl></PackageProjectUrl>
+    <RepositoryUrl>https://github.com/mostlyfun/fun-pipe-csharp</RepositoryUrl>
+    <PackageTags>Pipe, Pipe Operator, Functional, Chain, Function, Lambda, Delegate</PackageTags>
   </PropertyGroup>
 
 </Project>
