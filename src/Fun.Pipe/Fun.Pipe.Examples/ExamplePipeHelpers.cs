@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
 namespace Fun.Pipe.Examples;
 
-public static class ExampleHelpers
+public static class ExamplePipeHelpers
 {
     // General
     internal static void Log(object value) => Console.WriteLine(value);
@@ -11,6 +11,12 @@ public static class ExampleHelpers
         action();
         Log("\n");
     }
+    internal static void Assert(bool expected, string errorMessage)
+    {
+        if (!expected)
+            Log(Err($"Assertion failed: {errorMessage}"));
+    }
+    internal record Person(string Name, int NbHobbies);
 
     // Scenario
     internal static string GetFilepathFromUserMaybeNull(double flip)
@@ -32,10 +38,10 @@ public static class ExampleHelpers
     {
         return flip switch
         {
-            < 0.25 => Opt<string>.None,
-            < 0.50 => Opt<string>.Some("nonnumeric-file"),
-            < 0.75 => Opt<string>.Some("negative-file"),
-            _ => Opt<string>.Some("good-file"),
+            < 0.25 => None<string>(),
+            < 0.50 => Some<string>("nonnumeric-file"),
+            < 0.75 => Some<string>("negative-file"),
+            _ => Some<string>("good-file"),
         };
     }
     internal static int[] RiskyParse(string filepath)

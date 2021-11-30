@@ -45,6 +45,14 @@ public readonly struct Pipe<T>
     /// <inheritdoc cref="Res.IsErr"/>
     /// </summary>
     public bool IsErr => Res.IsErr;
+    /// <summary>
+    /// <inheritdoc cref="Res.Exc"/>
+    /// </summary>
+    public Opt<Exception> Exc => Res.Exc;
+    /// <summary>
+    /// <inheritdoc cref="Res.ErrMsg"/>
+    /// </summary>
+    public Opt<string> ErrMsg => Res.ErrMsg;
     // Method
     /// <summary>
     /// Returns the result value when <see cref="Res.IsOk"/>; or throws when <see cref="Res.IsErr"/>.
@@ -55,6 +63,40 @@ public readonly struct Pipe<T>
     /// </summary>
     /// <param name="fallbackValue"></param>
     public T Unwrap(T fallbackValue) => Res.Unwrap(fallbackValue);
+
+
+    // Method
+    /// <summary>
+    /// Does nothing and returns self when <see cref="IsOk"/>; logs the error when <see cref="IsErr"/>.
+    /// </summary>
+    /// <param name="detailed">Determines whether the error log wil be detailed or not.</param>
+    public Pipe<T> LogOnErr(bool detailed = false)
+    {
+        if (IsErr)
+            Console.WriteLine($"[Err] {Res.ToString(detailed)}");
+        return this;
+    }
+    /// <summary>
+    /// Does nothing and returns self when <see cref="IsOk"/>; throws when <see cref="IsErr"/>.
+    /// </summary>
+    public Pipe<T> ThrowOnErr()
+    {
+        if (IsErr)
+        {
+            LogOnErr(true);
+            throw new ArgumentException(Res.ToString(), Res.res.Exc.Unwrap(null));
+        }
+        return this;
+    }/// <summary>
+     /// Returns self when <see cref="IsOk"/>, Err with the <paramref name="newMessage"/> appended when <see cref="IsErr"/>.
+     /// </summary>
+    public Pipe<T> AddMessageWhenErr(string newMessage)
+    {
+        if (IsOk)
+            return this;
+        else
+            return new(Res.AddMessageWhenErr(newMessage), onErr, true);
+    }
 
 
     // Method - Run
@@ -69,7 +111,7 @@ public readonly struct Pipe<T>
         return new(Fun.Res.Ok, onErr);
     }
     /// <summary>
-    /// When <see cref="Res.IsOk"/>, runs the <paramref name="action"/> with captured value <see cref="Res{T}.Unwrap"/>; and returns a new Ok pipe state.
+    /// When <see cref="Res.IsOk"/>, runs the <paramref name="action"/> with captured value <see cref="Res{T}.Unwrap()"/>; and returns a new Ok pipe state.
     /// Action is ignored and error is carried when <see cref="Res.IsErr"/>.
     /// </summary>
     public Pipe Run(Action<T> action)
@@ -90,7 +132,7 @@ public readonly struct Pipe<T>
         return new(newRes, onErr);
     }
     /// <summary>
-    /// When <see cref="Res.IsOk"/>, runs the <paramref name="getResult"/> with captured value <see cref="Res{T}.Unwrap"/>; and returns a new pipe with the state returned by <paramref name="getResult"/>.
+    /// When <see cref="Res.IsOk"/>, runs the <paramref name="getResult"/> with captured value <see cref="Res{T}.Unwrap()"/>; and returns a new pipe with the state returned by <paramref name="getResult"/>.
     /// Method is ignored and error is carried when <see cref="Res.IsErr"/>.
     /// </summary>
     public Pipe Run(Func<T, Res> getResult)
@@ -118,7 +160,7 @@ public readonly struct Pipe<T>
         }
     }
     /// <summary>
-    /// When <see cref="Res.IsOk"/>, tries to run the <paramref name="action"/> with captured value <see cref="Res{T}.Unwrap"/>; and returns a new Ok pipe state if succeeds, Err state if action throws.
+    /// When <see cref="Res.IsOk"/>, tries to run the <paramref name="action"/> with captured value <see cref="Res{T}.Unwrap()"/>; and returns a new Ok pipe state if succeeds, Err state if action throws.
     /// Action is ignored and error is carried when <see cref="Res.IsErr"/>.
     /// </summary>
     public Pipe TryRun(Action<T> action)
@@ -153,7 +195,7 @@ public readonly struct Pipe<T>
         }
     }
     /// <summary>
-    /// When <see cref="Res.IsOk"/>, tries to run the <paramref name="getResult"/> with captured value <see cref="Res{T}.Unwrap"/>; and returns a new Ok pipe state method returns Ok, or Err state if method returns Err or throws.
+    /// When <see cref="Res.IsOk"/>, tries to run the <paramref name="getResult"/> with captured value <see cref="Res{T}.Unwrap()"/>; and returns a new Ok pipe state method returns Ok, or Err state if method returns Err or throws.
     /// Method is ignored and error is carried when <see cref="Res.IsErr"/>.
     /// </summary>
     public Pipe TryRun(Func<T, Res> getResult)
@@ -170,6 +212,49 @@ public readonly struct Pipe<T>
             return new Pipe(Fun.Res.Err(ex), onErr);
         }
     }
+    /// <summary>
+    /// When <see cref="Res.IsOk"/>, runs the <paramref name="getResult"/>; and returns a new pipe with the state returned by <paramref name="getResult"/>.
+    /// Method is ignored and error is carried when <see cref="Res.IsErr"/>.
+    /// <paramref name="operationName"/> is used only for Err messages.
+    /// </summary>
+    public Pipe Run(string operationName, Func<Res> getResult)
+        => Run(getResult).AddMessageWhenErr($"Failed during {operationName}");
+    /// <summary>
+    /// When <see cref="Res.IsOk"/>, runs the <paramref name="getResult"/>; and returns a new pipe with the state returned by <paramref name="getResult"/>.
+    /// Method is ignored and error is carried when <see cref="Res.IsErr"/>.
+    /// <paramref name="operationName"/> is used only for Err messages.
+    /// </summary>
+    public Pipe Run(string operationName, Func<T, Res> getResult)
+        => Run(getResult).AddMessageWhenErr($"Failed during {operationName}");
+    /// <summary>
+    /// When <see cref="Res.IsOk"/>, tries to run the <paramref name="action"/>; and returns a new Ok pipe state if succeeds, Err state if action throws.
+    /// Action is ignored and error is carried when <see cref="Res.IsErr"/>.
+    /// <paramref name="operationName"/> is used only for Err messages.
+    /// </summary>
+    public Pipe TryRun(string operationName, Action action)
+        => TryRun(action).AddMessageWhenErr($"Failed during {operationName}");
+    /// <summary>
+    /// When <see cref="Res.IsOk"/>, tries to run the <paramref name="action"/>; and returns a new Ok pipe state if succeeds, Err state if action throws.
+    /// Action is ignored and error is carried when <see cref="Res.IsErr"/>.
+    /// <paramref name="operationName"/> is used only for Err messages.
+    /// </summary>
+    public Pipe TryRun(string operationName, Action<T> action)
+        => TryRun(action).AddMessageWhenErr($"Failed during {operationName}");
+    /// <summary>
+    /// When <see cref="Res.IsOk"/>, tries to run the <paramref name="getResult"/>; and returns a new Ok pipe state method returns Ok, or Err state if method returns Err or throws.
+    /// Method is ignored and error is carried when <see cref="Res.IsErr"/>.
+    /// <paramref name="operationName"/> is used only for Err messages.
+    /// </summary>
+    public Pipe TryRun(string operationName, Func<Res> getResult)
+        => TryRun(getResult).AddMessageWhenErr($"Failed during {operationName}");
+    /// <summary>
+    /// When <see cref="Res.IsOk"/>, tries to run the <paramref name="getResult"/>; and returns a new Ok pipe state method returns Ok, or Err state if method returns Err or throws.
+    /// Method is ignored and error is carried when <see cref="Res.IsErr"/>.
+    /// <paramref name="operationName"/> is used only for Err messages.
+    /// </summary>
+    public Pipe TryRun(string operationName, Func<T, Res> getResult)
+        => TryRun(getResult).AddMessageWhenErr($"Failed during {operationName}");
+
 
     // Method - RunAsync
     /// <summary>
@@ -183,7 +268,7 @@ public readonly struct Pipe<T>
         return new(Fun.Res.Ok, onErr);
     }
     /// <summary>
-    /// When <see cref="Res.IsOk"/>, asynchronously runs the <paramref name="action"/> with captured value <see cref="Res{T}.Unwrap"/>; and returns a new Ok pipe state.
+    /// When <see cref="Res.IsOk"/>, asynchronously runs the <paramref name="action"/> with captured value <see cref="Res{T}.Unwrap()"/>; and returns a new Ok pipe state.
     /// Action is ignored and error is carried when <see cref="Res.IsErr"/>.
     /// </summary>
     public async Task<Pipe> RunAsync(Func<T, Task> action)
@@ -204,7 +289,7 @@ public readonly struct Pipe<T>
         return new(newRes, onErr);
     }
     /// <summary>
-    /// When <see cref="Res.IsOk"/>, asynchronously runs the <paramref name="getResult"/> with captured value <see cref="Res{T}.Unwrap"/>; and returns a new pipe with the state returned by <paramref name="getResult"/>.
+    /// When <see cref="Res.IsOk"/>, asynchronously runs the <paramref name="getResult"/> with captured value <see cref="Res{T}.Unwrap()"/>; and returns a new pipe with the state returned by <paramref name="getResult"/>.
     /// Method is ignored and error is carried when <see cref="Res.IsErr"/>.
     /// </summary>
     public async Task<Pipe> RunAsync(Func<T, Task<Res>> getResult)
@@ -232,7 +317,7 @@ public readonly struct Pipe<T>
         }
     }
     /// <summary>
-    /// When <see cref="Res.IsOk"/>, tries to asynchronously run the <paramref name="action"/> with captured value <see cref="Res{T}.Unwrap"/>; and returns a new Ok pipe state if succeeds, Err state if action throws.
+    /// When <see cref="Res.IsOk"/>, tries to asynchronously run the <paramref name="action"/> with captured value <see cref="Res{T}.Unwrap()"/>; and returns a new Ok pipe state if succeeds, Err state if action throws.
     /// Action is ignored and error is carried when <see cref="Res.IsErr"/>.
     /// </summary>
     public async Task<Pipe> TryRunAsync(Func<T, Task> action)
@@ -267,7 +352,7 @@ public readonly struct Pipe<T>
         }
     }
     /// <summary>
-    /// When <see cref="Res.IsOk"/>, tries to asynchronously run the <paramref name="getResult"/> with captured value <see cref="Res{T}.Unwrap"/>; and returns a new Ok pipe state method returns Ok, or Err state if method returns Err or throws.
+    /// When <see cref="Res.IsOk"/>, tries to asynchronously run the <paramref name="getResult"/> with captured value <see cref="Res{T}.Unwrap()"/>; and returns a new Ok pipe state method returns Ok, or Err state if method returns Err or throws.
     /// Method is ignored and error is carried when <see cref="Res.IsErr"/>.
     /// </summary>
     public async Task<Pipe> TryRunAsync(Func<T, Task<Res>> getResult)
@@ -284,6 +369,49 @@ public readonly struct Pipe<T>
             return new Pipe(Fun.Res.Err(ex), onErr);
         }
     }
+    /// <summary>
+    /// When <see cref="Res.IsOk"/>, runs the <paramref name="getResult"/>; and returns a new pipe with the state returned by <paramref name="getResult"/>.
+    /// Method is ignored and error is carried when <see cref="Res.IsErr"/>.
+    /// <paramref name="operationName"/> is used only for Err messages.
+    /// </summary>
+    public async Task<Pipe> RunAsync(string operationName, Func<Task<Res>> getResult)
+        => (await RunAsync(getResult)).AddMessageWhenErr($"Failed during {operationName}");
+    /// <summary>
+    /// When <see cref="Res.IsOk"/>, runs the <paramref name="getResult"/>; and returns a new pipe with the state returned by <paramref name="getResult"/>.
+    /// Method is ignored and error is carried when <see cref="Res.IsErr"/>.
+    /// <paramref name="operationName"/> is used only for Err messages.
+    /// </summary>
+    public async Task<Pipe> RunAsync(string operationName, Func<T, Task<Res>> getResult)
+        => (await RunAsync(getResult)).AddMessageWhenErr($"Failed during {operationName}");
+    /// <summary>
+    /// When <see cref="Res.IsOk"/>, tries to run the <paramref name="action"/>; and returns a new Ok pipe state if succeeds, Err state if action throws.
+    /// Action is ignored and error is carried when <see cref="Res.IsErr"/>.
+    /// <paramref name="operationName"/> is used only for Err messages.
+    /// </summary>
+    public async Task<Pipe> TryRunAsync(string operationName, Func<Task> action)
+        => (await TryRunAsync(action)).AddMessageWhenErr($"Failed during {operationName}");
+    /// <summary>
+    /// When <see cref="Res.IsOk"/>, tries to run the <paramref name="action"/>; and returns a new Ok pipe state if succeeds, Err state if action throws.
+    /// Action is ignored and error is carried when <see cref="Res.IsErr"/>.
+    /// <paramref name="operationName"/> is used only for Err messages.
+    /// </summary>
+    public async Task<Pipe> TryRunAsync(string operationName, Func<T, Task> action)
+        => (await TryRunAsync(action)).AddMessageWhenErr($"Failed during {operationName}");
+    /// <summary>
+    /// When <see cref="Res.IsOk"/>, tries to run the <paramref name="getResult"/>; and returns a new Ok pipe state method returns Ok, or Err state if method returns Err or throws.
+    /// Method is ignored and error is carried when <see cref="Res.IsErr"/>.
+    /// <paramref name="operationName"/> is used only for Err messages.
+    /// </summary>
+    public async Task<Pipe> TryRunAsync(string operationName, Func<Task<Res>> getResult)
+        => (await TryRunAsync(getResult)).AddMessageWhenErr($"Failed during {operationName}");
+    /// <summary>
+    /// When <see cref="Res.IsOk"/>, tries to run the <paramref name="getResult"/>; and returns a new Ok pipe state method returns Ok, or Err state if method returns Err or throws.
+    /// Method is ignored and error is carried when <see cref="Res.IsErr"/>.
+    /// <paramref name="operationName"/> is used only for Err messages.
+    /// </summary>
+    public async Task<Pipe> TryRunAsync(string operationName, Func<T, Task<Res>> getResult)
+        => (await TryRunAsync(getResult)).AddMessageWhenErr($"Failed during {operationName}");
+
 
     // Method - Map
     /// <summary>
@@ -294,10 +422,10 @@ public readonly struct Pipe<T>
         if (Res.IsErr)
             return new Pipe<TOut>(Res<TOut>.ErrFrom(Res), onErr, true);
         var newVal = mapper();
-        return new(Res<TOut>.Ok(newVal), onErr);
+        return new(Extensions.Ok(newVal), onErr);
     }
     /// <summary>
-    /// When <see cref="IsOk"/>, runs the <paramref name="mapper"/> with captured value <see cref="Res{T}.Unwrap"/>; and create a new Ok pipe state with the returned value of <typeparamref name="TOut"/>.
+    /// When <see cref="IsOk"/>, runs the <paramref name="mapper"/> with captured value <see cref="Res{T}.Unwrap()"/>; and create a new Ok pipe state with the returned value of <typeparamref name="TOut"/>.
     /// Method is ignored and error is carried when <see cref="Res.IsErr"/>.
     /// </summary>
     public Pipe<TOut> Map<TOut>(Func<T, TOut> mapper)
@@ -305,7 +433,7 @@ public readonly struct Pipe<T>
         if (Res.IsErr)
             return new Pipe<TOut>(Res<TOut>.ErrFrom(Res), onErr, true);
         var newVal = mapper(Res.Unwrap());
-        return new(Res<TOut>.Ok(newVal), onErr);
+        return new(Extensions.Ok(newVal), onErr);
     }
     /// <summary>
     /// <inheritdoc cref="Pipe.TryMap{TOut}(Func{TOut})"/>
@@ -317,15 +445,15 @@ public readonly struct Pipe<T>
         try
         {
             var newVal = mapper();
-            return new(Res<TOut>.Ok(newVal), onErr);
+            return new(Extensions.Ok(newVal), onErr);
         }
         catch (Exception ex)
         {
-            return new(Res<TOut>.Err(ex), onErr);
+            return new(Extensions.Err<TOut>(ex), onErr);
         }
     }
     /// <summary>
-    /// When <see cref="IsOk"/>, tries to run the <paramref name="mapper"/> with captured value <see cref="Res{T}.Unwrap"/>; and create a new Ok pipe state with the returned value of <typeparamref name="TOut"/> if succeeds, or Err if the method throws.
+    /// When <see cref="IsOk"/>, tries to run the <paramref name="mapper"/> with captured value <see cref="Res{T}.Unwrap()"/>; and create a new Ok pipe state with the returned value of <typeparamref name="TOut"/> if succeeds, or Err if the method throws.
     /// Method is ignored and error is carried when <see cref="Res.IsErr"/>.
     /// </summary>
     public Pipe<TOut> TryMap<TOut>(Func<T, TOut> mapper)
@@ -335,11 +463,11 @@ public readonly struct Pipe<T>
         try
         {
             var newVal = mapper(Res.Unwrap());
-            return new(Res<TOut>.Ok(newVal), onErr);
+            return new(Extensions.Ok(newVal), onErr);
         }
         catch (Exception ex)
         {
-            return new(Res<TOut>.Err(ex), onErr);
+            return new(Extensions.Err<TOut>(ex), onErr);
         }
     }
     /// <summary>
@@ -350,10 +478,10 @@ public readonly struct Pipe<T>
         if (Res.IsErr)
             return new Pipe<TOut>(Res<TOut>.ErrFrom(Res), onErr, true);
         var newVal = maybeMapper();
-        return newVal.IsNone ? new(Res<TOut>.Err("mapped-to-None"), onErr) : new(Res<TOut>.Ok(newVal.Unwrap()), onErr);
+        return newVal.IsNone ? new(Extensions.Err<TOut>("mapped-to-None"), onErr) : new(Extensions.Ok(newVal.Unwrap()), onErr);
     }
     /// <summary>
-    /// When <see cref="IsOk"/>, runs the <paramref name="maybeMapper"/> with captured value <see cref="Res{T}.Unwrap"/>; and create a new Ok pipe state with the returned value of <typeparamref name="TOut"/> if <see cref="Opt{TOut}.Some"/>, or Err if <see cref="Opt{TOut}.None"/>.
+    /// When <see cref="IsOk"/>, runs the <paramref name="maybeMapper"/> with captured value <see cref="Res{T}.Unwrap()"/>; and create a new Ok pipe state with the returned value of <typeparamref name="TOut"/> if <see cref="Opt{TOut}.Some"/>, or Err if <see cref="Opt{TOut}.None"/>.
     /// Method is ignored and error is carried when <see cref="Res.IsErr"/>.
     /// </summary>
     public Pipe<TOut> Map<TOut>(Func<T, Opt<TOut>> maybeMapper)
@@ -361,7 +489,7 @@ public readonly struct Pipe<T>
         if (Res.IsErr)
             return new Pipe<TOut>(Res<TOut>.ErrFrom(Res), onErr, true);
         var newVal = maybeMapper(Res.Unwrap());
-        return newVal.IsNone ? new(Res<TOut>.Err("mapped-to-None"), onErr) : new(Res<TOut>.Ok(newVal.Unwrap()), onErr);
+        return newVal.IsNone ? new(Extensions.Err<TOut>("mapped-to-None"), onErr) : new(Extensions.Ok(newVal.Unwrap()), onErr);
     }
     /// <summary>
     /// <inheritdoc cref="Pipe.TryMap{TOut}(Func{Opt{TOut}})"/>
@@ -373,15 +501,15 @@ public readonly struct Pipe<T>
         try
         {
             var newVal = maybeMapper();
-            return newVal.IsNone ? new(Res<TOut>.Err("mapped-to-None"), onErr) : new(Res<TOut>.Ok(newVal.Unwrap()), onErr);
+            return newVal.IsNone ? new(Extensions.Err<TOut>("mapped-to-None"), onErr) : new(Extensions.Ok(newVal.Unwrap()), onErr);
         }
         catch (Exception ex)
         {
-            return new(Res<TOut>.Err(ex), onErr);
+            return new(Extensions.Err<TOut>(ex), onErr);
         }
     }
     /// <summary>
-    /// When <see cref="IsOk"/>, tries to run the <paramref name="maybeMapper"/> with captured value <see cref="Res{T}.Unwrap"/>; and create a new Ok pipe state with the returned value of <typeparamref name="TOut"/> if <see cref="Opt{TOut}.Some"/>, or Err if the method throws or returns <see cref="Opt{TOut}.None"/>.
+    /// When <see cref="IsOk"/>, tries to run the <paramref name="maybeMapper"/> with captured value <see cref="Res{T}.Unwrap()"/>; and create a new Ok pipe state with the returned value of <typeparamref name="TOut"/> if <see cref="Opt{TOut}.Some"/>, or Err if the method throws or returns <see cref="Opt{TOut}.None"/>.
     /// Method is ignored and error is carried when <see cref="Res.IsErr"/>.
     /// </summary>
     public Pipe<TOut> TryMap<TOut>(Func<T, Opt<TOut>> maybeMapper)
@@ -391,13 +519,50 @@ public readonly struct Pipe<T>
         try
         {
             var newVal = maybeMapper(Res.Unwrap());
-            return newVal.IsNone ? new(Res<TOut>.Err("mapped-to-None"), onErr) : new(Res<TOut>.Ok(newVal.Unwrap()), onErr);
+            return newVal.IsNone ? new(Extensions.Err<TOut>("mapped-to-None"), onErr) : new(Extensions.Ok(newVal.Unwrap()), onErr);
         }
         catch (Exception ex)
         {
-            return new(Res<TOut>.Err(ex), onErr);
+            return new(Extensions.Err<TOut>(ex), onErr);
         }
     }
+    /// <summary>
+    /// <inheritdoc cref="Pipe.Map{TOut}(string, Func{Opt{TOut}})"/>
+    /// </summary>
+    public Pipe<TOut> Map<TOut>(string operationName, Func<Opt<TOut>> maybeMapper)
+        => Map(maybeMapper).AddMessageWhenErr($"Failed during {operationName}");
+    /// <summary>
+    /// When <see cref="IsOk"/>, runs <paramref name="maybeMapper"/>(value) where value=this.Unwrap(); and create a new Ok pipe state with the returned value of <typeparamref name="TOut"/> if <see cref="Opt{TOut}.Some"/>, or Err if <see cref="Opt{TOut}.None"/>.
+    /// Method is ignored and error is carried when <see cref="Res.IsErr"/>.
+    /// <paramref name="operationName"/> is used only for Err messages.
+    /// </summary>
+    public Pipe<TOut> Map<TOut>(string operationName, Func<T, Opt<TOut>> maybeMapper)
+        => Map(maybeMapper).AddMessageWhenErr($"Failed during {operationName}");
+    /// <summary>
+    /// <inheritdoc cref="Pipe.TryMap{TOut}(string, Func{TOut})"/>
+    /// </summary>
+    public Pipe<TOut> TryMap<TOut>(string operationName, Func<TOut> mapper)
+        => TryMap(mapper).AddMessageWhenErr($"Failed during {operationName}");
+    /// <summary>
+    /// When <see cref="IsOk"/>, tries to run <paramref name="mapper"/>(value) where value=this.Unwrap(); and create a new Ok pipe state with the returned value of <typeparamref name="TOut"/> if succeeds, or Err if throws.
+    /// Method is ignored and error is carried when <see cref="Res.IsErr"/>.
+    /// <paramref name="operationName"/> is used only for Err messages.
+    /// </summary>
+    public Pipe<TOut> TryMap<TOut>(string operationName, Func<T, TOut> mapper)
+        => TryMap(mapper).AddMessageWhenErr($"Failed during {operationName}");
+    /// <summary>
+    /// <inheritdoc cref="Pipe.TryMap{TOut}(string, Func{Opt{TOut}})"/>
+    /// </summary>
+    public Pipe<TOut> TryMap<TOut>(string operationName, Func<Opt<TOut>> maybeMapper)
+        => TryMap(maybeMapper).AddMessageWhenErr($"Failed during {operationName}");
+    /// <summary>
+    /// When <see cref="IsOk"/>, tries to run the <paramref name="maybeMapper"/>(value) where value=this.Unwrap(); and create a new Ok pipe state with the returned value of <typeparamref name="TOut"/> if <see cref="Opt{TOut}.Some"/>, or Err if the method throws or returns <see cref="Opt{TOut}.None"/>.
+    /// Method is ignored and error is carried when <see cref="Res.IsErr"/>.
+    /// <paramref name="operationName"/> is used only for Err messages.
+    /// </summary>
+    public Pipe<TOut> TryMap<TOut>(string operationName, Func<T, Opt<TOut>> maybeMapper)
+        => TryMap(maybeMapper).AddMessageWhenErr($"Failed during {operationName}");
+
 
     // Method - MapAsync
     /// <summary>
@@ -408,10 +573,10 @@ public readonly struct Pipe<T>
         if (Res.IsErr)
             return new Pipe<TOut>(Res<TOut>.ErrFrom(Res), onErr, true);
         var newVal = await mapper();
-        return new(Res<TOut>.Ok(newVal), onErr);
+        return new(Extensions.Ok(newVal), onErr);
     }
     /// <summary>
-    /// When <see cref="IsOk"/>, asynchronously runs the <paramref name="mapper"/> with captured value <see cref="Res{T}.Unwrap"/>; and create a new Ok pipe state with the returned value of <typeparamref name="TOut"/>.
+    /// When <see cref="IsOk"/>, asynchronously runs the <paramref name="mapper"/> with captured value <see cref="Res{T}.Unwrap()"/>; and create a new Ok pipe state with the returned value of <typeparamref name="TOut"/>.
     /// Method is ignored and error is carried when <see cref="Res.IsErr"/>.
     /// </summary>
     public async Task<Pipe<TOut>> MapAsync<TOut>(Func<T, Task<TOut>> mapper)
@@ -419,7 +584,7 @@ public readonly struct Pipe<T>
         if (Res.IsErr)
             return new Pipe<TOut>(Res<TOut>.ErrFrom(Res), onErr, true);
         var newVal = await mapper(Res.Unwrap());
-        return new(Res<TOut>.Ok(newVal), onErr);
+        return new(Extensions.Ok(newVal), onErr);
     }
     /// <summary>
     /// <inheritdoc cref="Pipe.TryMapAsync{TOut}(Func{Task{Opt{TOut}}})"/>
@@ -431,15 +596,15 @@ public readonly struct Pipe<T>
         try
         {
             var newVal = await mapper();
-            return new(Res<TOut>.Ok(newVal), onErr);
+            return new(Extensions.Ok(newVal), onErr);
         }
         catch (Exception ex)
         {
-            return new(Res<TOut>.Err(ex), onErr);
+            return new(Extensions.Err<TOut>(ex), onErr);
         }
     }
     /// <summary>
-    /// When <see cref="IsOk"/>, tries to asynchronously run the <paramref name="mapper"/> with captured value <see cref="Res{T}.Unwrap"/>; and create a new Ok pipe state with the returned value of <typeparamref name="TOut"/> if succeeds, or Err if the method throws.
+    /// When <see cref="IsOk"/>, tries to asynchronously run the <paramref name="mapper"/> with captured value <see cref="Res{T}.Unwrap()"/>; and create a new Ok pipe state with the returned value of <typeparamref name="TOut"/> if succeeds, or Err if the method throws.
     /// Method is ignored and error is carried when <see cref="Res.IsErr"/>.
     /// </summary>
     public async Task<Pipe<TOut>> TryMapAsync<TOut>(Func<T, Task<TOut>> mapper)
@@ -449,11 +614,11 @@ public readonly struct Pipe<T>
         try
         {
             var newVal = await mapper(Res.Unwrap());
-            return new(Res<TOut>.Ok(newVal), onErr);
+            return new(Extensions.Ok(newVal), onErr);
         }
         catch (Exception ex)
         {
-            return new(Res<TOut>.Err(ex), onErr);
+            return new(Extensions.Err<TOut>(ex), onErr);
         }
     }
     /// <summary>
@@ -464,10 +629,10 @@ public readonly struct Pipe<T>
         if (Res.IsErr)
             return new Pipe<TOut>(Res<TOut>.ErrFrom(Res), onErr, true);
         var newVal = await maybeMapper();
-        return newVal.IsNone ? new(Res<TOut>.Err("mapped-to-None"), onErr) : new(Res<TOut>.Ok(newVal.Unwrap()), onErr);
+        return newVal.IsNone ? new(Extensions.Err<TOut>("mapped-to-None"), onErr) : new(Extensions.Ok(newVal.Unwrap()), onErr);
     }
     /// <summary>
-    /// When <see cref="IsOk"/>, asynchronously runs the <paramref name="maybeMapper"/> with captured value <see cref="Res{T}.Unwrap"/>; and create a new Ok pipe state with the returned value of <typeparamref name="TOut"/> if <see cref="Opt{TOut}.Some"/>, or Err if <see cref="Opt{TOut}.None"/>.
+    /// When <see cref="IsOk"/>, asynchronously runs the <paramref name="maybeMapper"/> with captured value <see cref="Res{T}.Unwrap()"/>; and create a new Ok pipe state with the returned value of <typeparamref name="TOut"/> if <see cref="Opt{TOut}.Some"/>, or Err if <see cref="Opt{TOut}.None"/>.
     /// Method is ignored and error is carried when <see cref="Res.IsErr"/>.
     /// </summary>
     public async Task<Pipe<TOut>> MapAsync<TOut>(Func<T, Task<Opt<TOut>>> maybeMapper)
@@ -475,7 +640,7 @@ public readonly struct Pipe<T>
         if (Res.IsErr)
             return new Pipe<TOut>(Res<TOut>.ErrFrom(Res), onErr, true);
         var newVal = await maybeMapper(Res.Unwrap());
-        return newVal.IsNone ? new(Res<TOut>.Err("mapped-to-None"), onErr) : new(Res<TOut>.Ok(newVal.Unwrap()), onErr);
+        return newVal.IsNone ? new(Extensions.Err<TOut>("mapped-to-None"), onErr) : new(Extensions.Ok(newVal.Unwrap()), onErr);
     }
     /// <summary>
     /// <inheritdoc cref="TryMapAsync{TOut}(Func{T, Task{Opt{TOut}}})"/>
@@ -487,15 +652,15 @@ public readonly struct Pipe<T>
         try
         {
             var newVal = await maybeMapper();
-            return newVal.IsNone ? new(Res<TOut>.Err("mapped-to-None"), onErr) : new(Res<TOut>.Ok(newVal.Unwrap()), onErr);
+            return newVal.IsNone ? new(Extensions.Err<TOut>("mapped-to-None"), onErr) : new(Extensions.Ok(newVal.Unwrap()), onErr);
         }
         catch (Exception ex)
         {
-            return new(Res<TOut>.Err(ex), onErr);
+            return new(Extensions.Err<TOut>(ex), onErr);
         }
     }
     /// <summary>
-    /// When <see cref="IsOk"/>, tries to asynchronously run the <paramref name="maybeMapper"/> with captured value <see cref="Res{T}.Unwrap"/>; and create a new Ok pipe state with the returned value of <typeparamref name="TOut"/> if <see cref="Opt{TOut}.Some"/>, or Err if the method throws or returns <see cref="Opt{TOut}.None"/>.
+    /// When <see cref="IsOk"/>, tries to asynchronously run the <paramref name="maybeMapper"/> with captured value <see cref="Res{T}.Unwrap()"/>; and create a new Ok pipe state with the returned value of <typeparamref name="TOut"/> if <see cref="Opt{TOut}.Some"/>, or Err if the method throws or returns <see cref="Opt{TOut}.None"/>.
     /// Method is ignored and error is carried when <see cref="Res.IsErr"/>.
     /// </summary>
     public async Task<Pipe<TOut>> TryMapAsync<TOut>(Func<T, Task<Opt<TOut>>> maybeMapper)
@@ -505,11 +670,47 @@ public readonly struct Pipe<T>
         try
         {
             var newVal = await maybeMapper(Res.Unwrap());
-            return newVal.IsNone ? new(Res<TOut>.Err("mapped-to-None"), onErr) : new(Res<TOut>.Ok(newVal.Unwrap()), onErr);
+            return newVal.IsNone ? new(Extensions.Err<TOut>("mapped-to-None"), onErr) : new(Extensions.Ok(newVal.Unwrap()), onErr);
         }
         catch (Exception ex)
         {
-            return new(Res<TOut>.Err(ex), onErr);
+            return new(Extensions.Err<TOut>(ex), onErr);
         }
     }
+    /// <summary>
+    /// <inheritdoc cref="Pipe.MapAsync{TOut}(Func{Task{Opt{TOut}}})"/>
+    /// </summary>
+    public async Task<Pipe<TOut>> MapAsync<TOut>(string operationName, Func<Task<Opt<TOut>>> maybeMapper)
+        => (await MapAsync(maybeMapper)).AddMessageWhenErr($"Failed during {operationName}");
+    /// <summary>
+    /// When <see cref="IsOk"/>, runs <paramref name="maybeMapper"/>(value) where value=this.Unwrap(); and create a new Ok pipe state with the returned value of <typeparamref name="TOut"/> if <see cref="Opt{TOut}.Some"/>, or Err if <see cref="Opt{TOut}.None"/>.
+    /// Method is ignored and error is carried when <see cref="Res.IsErr"/>.
+    /// <paramref name="operationName"/> is used only for Err messages.
+    /// </summary>
+    public async Task<Pipe<TOut>> MapAsync<TOut>(string operationName, Func<T, Task<Opt<TOut>>> maybeMapper)
+        => (await MapAsync(maybeMapper)).AddMessageWhenErr($"Failed during {operationName}");
+    /// <summary>
+    /// <inheritdoc cref="Pipe.TryMapAsync{TOut}(Func{Task{TOut}})"/>
+    /// </summary>
+    public async Task<Pipe<TOut>> TryMapAsync<TOut>(string operationName, Func<Task<TOut>> mapper)
+        => (await TryMapAsync(mapper)).AddMessageWhenErr($"Failed during {operationName}");
+    /// <summary>
+    /// When <see cref="IsOk"/>, tries to run <paramref name="mapper"/>(value) where value=this.Unwrap(); and create a new Ok pipe state with the returned value of <typeparamref name="TOut"/> if succeeds, or Err if throws.
+    /// Method is ignored and error is carried when <see cref="Res.IsErr"/>.
+    /// <paramref name="operationName"/> is used only for Err messages.
+    /// </summary>
+    public async Task<Pipe<TOut>> TryMapAsync<TOut>(string operationName, Func<T, Task<TOut>> mapper)
+        => (await TryMapAsync(mapper)).AddMessageWhenErr($"Failed during {operationName}");
+    /// <summary>
+    /// <inheritdoc cref="Pipe.TryMapAsync{TOut}(Func{Task{Opt{TOut}}})"/>
+    /// </summary>
+    public async Task<Pipe<TOut>> TryMapAsync<TOut>(string operationName, Func<Task<Opt<TOut>>> maybeMapper)
+        => (await TryMapAsync(maybeMapper)).AddMessageWhenErr($"Failed during {operationName}");
+    /// <summary>
+    /// When <see cref="IsOk"/>, tries to run the <paramref name="maybeMapper"/>(value) where value=this.Unwrap(); and create a new Ok pipe state with the returned value of <typeparamref name="TOut"/> if <see cref="Opt{TOut}.Some"/>, or Err if the method throws or returns <see cref="Opt{TOut}.None"/>.
+    /// Method is ignored and error is carried when <see cref="Res.IsErr"/>.
+    /// <paramref name="operationName"/> is used only for Err messages.
+    /// </summary>
+    public async Task<Pipe<TOut>> TryMapAsync<TOut>(string operationName, Func<T, Task<Opt<TOut>>> maybeMapper)
+        => (await TryMapAsync(maybeMapper)).AddMessageWhenErr($"Failed during {operationName}");
 }

@@ -17,7 +17,10 @@ public readonly struct Res : IEquatable<Res>
     /// Returns option of a possibly caught exception causing the result to be <see cref="IsErr"/>.
     /// </summary>
     public readonly Opt<Exception> Exc;
-    readonly Opt<string> msg;
+    /// <summary>
+    /// Returns option of the message of a possible error causing the result to be <see cref="IsErr"/>.
+    /// </summary>
+    public readonly Opt<string> ErrMsg;
     // Prop
     /// <summary>
     /// True if the result is Ok; false otherwise.
@@ -30,47 +33,95 @@ public readonly struct Res : IEquatable<Res>
     {
         IsErr = isErr;
         Exc = exc;
-        this.msg = msg;
+        this.ErrMsg = msg;
     }
     // Ctor
     /// <summary>
     /// Returns Ok result.
     /// </summary>
-    public static Res Ok => new(false, Opt<Exception>.None, Opt<string>.None);
+    public static Res Ok => new(false, Extensions.None<Exception>(), Extensions.None<string>());
     /// <summary>
     /// Returns Err result due to the given error <paramref name="message"/>.
     /// </summary>
-    public static Res Err(string message) => new(true, Opt<Exception>.None, Opt<string>.Some(message));
+    public static Res Err(string message = "") => new(true, Extensions.None<Exception>(), Extensions.Some(message));
     /// <summary>
     /// Returns Err result due to the given exception <paramref name="exception"/>.
     /// </summary>
-    public static Res Err(Exception exception) => new(true, Opt<Exception>.Some(exception), Opt<string>.Some(exception.Message));
+    public static Res Err(Exception exception) => new(true, Extensions.Some(exception), Extensions.Some(exception.Message));
     /// <summary>
     /// Returns Err result due to the given error <paramref name="message"/> and exception <paramref name="exception"/>.
     /// </summary>
-    public static Res Err(string message, Exception exception) => new(true, Opt<Exception>.Some(exception), Opt<string>.Some(message));
-
+    public static Res Err(string message, Exception exception) => new(true, Extensions.Some(exception), Extensions.Some(message));
 
     // Method
     /// <summary>
-    /// Does nothing when <see cref="IsOk"/>; logs the error when <see cref="IsErr"/>.
+    /// Does nothing and returns self when <see cref="IsOk"/>; logs the error when <see cref="IsErr"/>.
     /// </summary>
     /// <param name="detailed">Determines whether the error log wil be detailed or not.</param>
-    public void LogOnErr(bool detailed = false)
+    public Res LogOnErr(bool detailed = false)
     {
-        if (IsOk)
-            return;
-        Console.WriteLine($"[Err] {ToString(detailed)}");
+        if (IsErr)
+            Console.WriteLine($"[Err] {ToString(detailed)}");
+        return this;
     }
     /// <summary>
-    /// Does nothing when <see cref="IsOk"/>; throws when <see cref="IsErr"/>.
+    /// Does nothing and returns self when <see cref="IsOk"/>; throws when <see cref="IsErr"/>.
     /// </summary>
-    public void ThrowOnErr()
+    public Res ThrowOnErr()
+    {
+        if (IsErr)
+        {
+            LogOnErr(true);
+            throw new ArgumentException(ToString(), Exc.Unwrap(null));
+        }
+        return this;
+    }
+    /// <summary>
+    /// Returns self when <see cref="IsOk"/>, Err with the <paramref name="newMessage"/> appended when <see cref="IsErr"/>.
+    /// </summary>
+    public Res AddMessageWhenErr(string newMessage)
     {
         if (IsOk)
-            return;
-        LogOnErr(true);
-        throw new ArgumentException(ToString(), Exc.Unwrap(null));
+            return this;
+        if (ErrMsg.IsNone)
+            return Err(newMessage);
+        else
+            return Err(ErrMsg.Unwrap() + "\n" + newMessage);
+    }
+    /// <summary>
+    /// Maps Err to Err; and Ok to Ok(<paramref name="mapper"/>) which is a result of <typeparamref name="TOut"/>.
+    /// </summary>
+    public Res<TOut> Map<TOut>(Func<TOut> mapper)
+    {
+        if (IsOk)
+            return Extensions.Ok(mapper());
+        else
+            return Res<TOut>.ErrFrom(this);
+    }
+    /// <summary>
+    /// Maps Err to Err; and Ok to <paramref name="getResult"/> which is a result of <typeparamref name="TOut"/>.
+    /// </summary>
+    public Res<TOut> Map<TOut>(Func<Res<TOut>> getResult)
+        => IsOk ? getResult() : Res<TOut>.ErrFrom(this);
+    /// <summary>
+    /// Does nothing when <see cref="IsErr"/>; runs <paramref name="action"/> when <see cref="IsOk"/>.
+    /// Returns self.
+    /// </summary>
+    public Res Run(Action action)
+    {
+        if (IsOk)
+            action();
+        return this;
+    }
+    /// <summary>
+    /// Does nothing when <see cref="IsOk"/>; runs <paramref name="action"/> when <see cref="IsErr"/>.
+    /// Returns self.
+    /// </summary>
+    public Res RunWhenErr(Action action)
+    {
+        if (IsErr)
+            action();
+        return this;
     }
 
 
@@ -79,7 +130,7 @@ public readonly struct Res : IEquatable<Res>
     /// Converts the option to its equivalent string representation.
     /// </summary>
     public override string ToString()
-        => IsOk ? "Ok" : $"Err({msg.Unwrap()})";
+        => IsOk ? "Ok" : $"Err({ErrMsg.Unwrap()})";
     /// <summary>
     /// Converts the option to its equivalent string representation.
     /// </summary>
@@ -90,7 +141,7 @@ public readonly struct Res : IEquatable<Res>
             return ToString();
 
         var sb = new StringBuilder();
-        sb.Append("Err(").Append(msg.Unwrap()).Append(')');
+        sb.Append("Err(").Append(ErrMsg.Unwrap()).Append(')');
         var inner = Exc.Unwrap().InnerException;
         while (inner != null && inner.Message != null)
             sb.Append(">_ \n").Append(inner.Message);
@@ -112,7 +163,7 @@ public readonly struct Res : IEquatable<Res>
     public static bool operator !=(Res first, Res second)
         => first.IsErr != second.IsErr;
     /// <summary>
-    /// Returns whether this result is equal to the <paramref name="other"/>.
+    /// Returns whether this result is equal to the <paramref name="obj"/>.
     /// </summary>
     public override bool Equals([NotNullWhen(true)] object obj)
         => (obj is Res) ? (this == (Res)obj) : false;
