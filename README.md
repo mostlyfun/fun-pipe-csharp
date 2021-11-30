@@ -7,11 +7,16 @@ Functional pipe methods for csharp. This library aims to provide the ergonomy of
 ## Example Pipe
 Complete example can be found here: [/src/Fun.Pipe/Fun.Pipe.Examples/ExamplePipe.cs](https://github.com/mostlyfun/fun-pipe-csharp/blob/main/src/Fun.Pipe/Fun.Pipe.Examples/ExamplePipe.cs).
 
+Consider a classical file parsing scenario:
+* We get the filepath from user. As common, the user may or maynot provide the input. Therefore, `null` check is required for the traditional `GetFilepathFromUserMaybeNull` method; while `GetFilepathFromUser` returns an option which can be automatically handled in a pipe.
+* We perform `RiskyParse` text into an integer array, and we are aware that we may encounter exceptions while parsing.
+* Finally, we analyze the parsed numbers by calling `LogSumAmounts` on it. This method also throws if it encounters any negative value; logs the sum otherwise.
+
 #### Imperative
-Consider for instance, a classical file parsing scenario with the imperative style having side effects which has multiple problems:
-* Although `null` check is added, it is verbose; furthermore, null-checks are easy to forgot.
-* `int[] numbers;` outside the try-block and assignment within the block is not ideal.
-* try-catch blocks are necessary; however, they make the code verbose with unnecessary scopes.
+We encounter several issues with the imperative style:
+* Null-checks are always easy to forget. Although it is added here, it is verbose.
+* Two lines for the numbers is lengthy: one is for defining `int[] numbers;` outside the try-block, and one for the assignment within the block.
+* Try-catch blocks are necessary; however, they make the code verbose and add unnecessary scopes.
 
 ```csharp
 static void Imperative(double flip)
