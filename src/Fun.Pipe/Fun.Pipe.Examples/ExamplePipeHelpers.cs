@@ -1,22 +1,27 @@
 using System.Threading.Tasks;
 namespace Fun.Pipe.Examples;
 
-public static class ExamplePipeHelpers
+internal static class ExamplePipeHelpers
 {
     // General
+    internal record Wizard(string Name, int NbSpells);
     internal static void Log(object value) => Console.WriteLine(value);
     internal static void RunExample(string name, Action action)
     {
-        Log($"-- {name} --");
+        Log($"\n[ {name} ]");
         action();
-        Log("\n");
+    }
+    internal static void Assert(bool expected)
+    {
+        if (!expected)
+            Log(Err($"Assertion failed"));
     }
     internal static void Assert(bool expected, string errorMessage)
     {
         if (!expected)
             Log(Err($"Assertion failed: {errorMessage}"));
     }
-    internal record Person(string Name, int NbHobbies);
+
 
     // Scenario
     internal static string GetFilepathFromUserMaybeNull(double flip)
@@ -54,7 +59,7 @@ public static class ExamplePipeHelpers
             _ => throw new ArgumentException("unknown file"),
         };
     }
-    internal static void LogSumAmounts(int[] numbers)
+    internal static int LogAndGetSumAmounts(int[] numbers)
     {
         int sum = 0;
         for (int i = 0; i < numbers.Length; i++)
@@ -64,6 +69,7 @@ public static class ExamplePipeHelpers
             sum += numbers[i];
         }
         Log($"Total amount: {sum}");
+        return sum;
     }
 
     // Fake async versions for demo purposes
@@ -71,9 +77,9 @@ public static class ExamplePipeHelpers
         => Task.FromResult(GetFilepathFromUserMaybeNull(flip));
     internal static Task<int[]> RiskyParseAsync(string filepath)
         => Task.FromResult(RiskyParse(filepath));
-    internal static Task LogSumAmountsAsync(int[] numbers)
+    internal static async Task<int> LogAndGetSumAmountsAsync(int[] numbers)
     {
-        LogSumAmounts(numbers);
-        return Task.Delay(10);
+        await Task.Delay(10);
+        return LogAndGetSumAmounts(numbers);
     }
 }

@@ -1,212 +1,165 @@
-namespace Fun;
 using System;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
+
+namespace Fun;
 
 /// <summary>
-/// Result type which can either be Ok with some value or Err.
+/// Immutable result type which can either be Ok or Err.
+/// When the state <see cref="IsOk"/>, the result holds the valid value which can be extracted by <see cref="Unwrap()"/> (or <see cref="Unwrap(T)"/>) methods.
+/// When the state <see cref="IsErr"/>, the result further holds Some <see cref="ErrorMessage"/>.
 /// </summary>
-public readonly struct Res<T> : IEquatable<Res<T>>, IEquatable<T>, IEquatable<Opt<T>>
+public readonly struct Res<T>
 {
     // Data
-    internal readonly Res res;
-    /// <summary>
-    /// Value of the result which is None when <see cref="IsErr"/> and Some(T) when <see cref="IsOk"/>.
-    /// </summary>
-    readonly Opt<T> value;
+    internal readonly T value;
+    readonly string errorMessage;
     // Prop
     /// <summary>
-    /// <inheritdoc cref="Res.IsOk"/>
+    /// True if the result is Ok; false otherwise.
     /// </summary>
-    public bool IsOk => res.IsOk;
+    public bool IsOk => errorMessage == null;
     /// <summary>
-    /// <inheritdoc cref="Res.IsErr"/>
+    /// True if the result is Err; false otherwise.
     /// </summary>
-    public bool IsErr => res.IsErr;
+    public bool IsErr => errorMessage != null;
     /// <summary>
-    /// <inheritdoc cref="Res.Exc"/>
+    /// Returns the underlying error message if <see cref="IsErr"/>; None if <see cref="IsOk"/>;
     /// </summary>
-    public Opt<Exception> Exc => res.Exc;
-    /// <summary>
-    /// <inheritdoc cref="Res.ErrMsg"/>
-    /// </summary>
-    public Opt<string> ErrMsg => res.ErrMsg;
+    public Opt<string> ErrorMessage => errorMessage == null ? new() : new(errorMessage);
 
 
-    // Ctor - Helper
-    Res(Res res, Opt<T> value)
-    {
-        this.res = res;
-        this.value = value;
-    }
-    internal static Res<T> ErrFrom(Res res) => new(res, Extensions.None<T>());
-    internal static Res<T> ErrFrom<TIn>(Res<TIn> res) => new(res.res, Extensions.None<T>());
     // Ctor
     /// <summary>
-    /// Returns Ok result with the given <paramref name="value"/>.
+    /// Parameterless ctor returns Err("not-initialized"), and hence, is not useful!
+    /// Use 'Fun.Extensions.Ok' or `Fun.Extensions.Err` to construct options.
+    /// Better to add `using static Fun.Extensions` and use `Ok` and `Err` directly.
     /// </summary>
-    internal static Res<T> Ok(T value) => new(Res.Ok, Extensions.Some(value));
+    public Res()
+    {
+        errorMessage = "not-initialized";
+        value = default;
+    }
+    internal Res(T value)
+    {
+        if (typeof(T).IsClass)
+        {
+            if (value == null)
+            {
+                errorMessage = $"null-is-passed-in-Res<{typeof(T).Name}>";
+                this.value = default;
+            }
+            else
+            {
+                this.value = value;
+                errorMessage = null;
+            }
+        }
+        else
+        {
+            this.value = value;
+            errorMessage = null;
+        }
+    }
+    internal Res(string errorMessage, string when)
+    {
+        this.value = default;
+        this.errorMessage = Res.GetErrorMessage(errorMessage, when);
+    }
+    internal Res(Exception exception, string when)
+    {
+        this.value = default;
+        errorMessage = Res.GetExceptionMessage(exception, when);
+    }
     /// <summary>
-    /// <inheritdoc cref="Res.Err(string)"/>
+    /// Implicitly converts to <paramref name="value"/> into <see cref="Res{T}"/>.Ok(<paramref name="value"/>).
     /// </summary>
-    internal static Res<T> Err(string message = "") => new(Res.Err(message), Extensions.None<T>());
-    /// <summary>
-    /// <inheritdoc cref="Res.Err(Exception)"/>
-    /// </summary>
-    internal static Res<T> Err(Exception exception) => new(Res.Err(exception), Extensions.None<T>());
-    /// <summary>
-    /// <inheritdoc cref="Res.Err(string, Exception)"/>
-    /// </summary>
-    internal static Res<T> Err(string message, Exception exception) => new(Res.Err(message, exception), Extensions.None<T>());
-    // Ctor - implicit
-    /// <summary>
-    /// Implicitly returns Ok result with the given <paramref name="value"/>.
-    /// </summary>
-    public static implicit operator Res<T>(T value) => Extensions.Ok(value);
+    public static implicit operator Res<T>(T value) => new(value);
 
 
     // Method
     /// <summary>
-    /// Returns the result value when <see cref="IsOk"/>; or throws when <see cref="IsErr"/>.
+    /// Returns the value when <see cref="IsOk"/>; or throws when <see cref="IsErr"/>.
     /// </summary>
     public T Unwrap()
     {
-        if (IsErr)
-            throw new ArgumentException("tried to unwrap Err");
-        return value.Unwrap();
+        if (errorMessage != null)
+            throw new ArgumentException("tried to unwrap None");
+        return value;
     }
     /// <summary>
-    /// Returns the result value when <see cref="IsOk"/>; or returns the <paramref name="fallbackValue"/> when <see cref="IsErr"/>.
+    /// Returns the value when <see cref="IsOk"/>; or returns the <paramref name="fallbackValue"/> when <see cref="IsErr"/>.
     /// </summary>
-    /// <param name="fallbackValue"></param>
-    public T Unwrap(T fallbackValue) => IsErr ? fallbackValue : value.Unwrap();
+    public T Unwrap(T fallbackValue)
+        => errorMessage == null ? value : fallbackValue;
     /// <summary>
-    /// Does nothing and returns self when <see cref="IsOk"/>; logs the error when <see cref="IsErr"/>.
+    /// <inheritdoc cref="Res.MsgIfErr(string)"/>
     /// </summary>
-    /// <param name="detailed">Determines whether the error log wil be detailed or not.</param>
-    public Res<T> LogOnErr(bool detailed = false)
+    public Res<T> MsgIfErr(string errorMessage)
     {
-        if (IsErr)
-            res.LogOnErr(detailed);
-        return this;
+        if (this.errorMessage == null)
+            return this;
+        string msg = this.errorMessage + Environment.NewLine + Res.GetErrorMessage(errorMessage, null);
+        return new(msg, null);
     }
     /// <summary>
-    /// Does nothing and returns self when <see cref="IsOk"/>; throws when <see cref="IsErr"/>.
+    /// <inheritdoc cref="Res.MsgIfErr(string, string)"/>
     /// </summary>
-    public Res<T> ThrowOnErr()
+    public Res<T> MsgIfErr(string errorMessage, string when)
     {
-        if (IsErr)
-            res.ThrowOnErr();
-        return this;
-    }
-    /// <summary>
-    /// Returns self when <see cref="IsOk"/>, Err with the <paramref name="newMessage"/> appended when <see cref="IsErr"/>.
-    /// </summary>
-    public Res<T> AddMessageWhenErr(string newMessage)
-    {
-        if (IsErr)
-            res.AddMessageWhenErr(newMessage);
-        return this;
-    }
-    /// <summary>
-    /// Maps Err to Err; and Ok to Ok(<paramref name="mapper"/>) which is a result of <typeparamref name="TOut"/>.
-    /// </summary>
-    public Res<TOut> Map<TOut>(Func<T, TOut> mapper)
-    {
-        if (IsOk)
-            return Res<TOut>.Ok(mapper(value.Unwrap()));
-        else
-            return Res<TOut>.ErrFrom(this);
-    }
-    /// <summary>
-    /// Maps Err to Err; and Ok to <paramref name="getResult"/> which is a result of <typeparamref name="TOut"/>.
-    /// </summary>
-    public Res<TOut> Map<TOut>(Func<T, Res<TOut>> getResult)
-        => IsOk ? getResult(value.Unwrap()) : Res<TOut>.ErrFrom(this);
-    /// <summary>
-    /// Does nothing when <see cref="IsErr"/>; runs <paramref name="action"/> when <see cref="IsOk"/>.
-    /// Returns self.
-    /// </summary>
-    public Res<T> Run(Action action)
-    {
-        if (IsOk)
-            action();
-        return this;
-    }
-    /// <summary>
-    /// Does nothing when <see cref="IsErr"/>; runs <paramref name="action"/> when <see cref="IsOk"/>.
-    /// Returns self.
-    /// </summary>
-    public Res<T> Run(Action<T> action)
-    {
-        if (IsOk)
-            action(value.Unwrap());
-        return this;
-    }
-    /// <summary>
-    /// Does nothing when <see cref="IsOk"/>; runs <paramref name="action"/> when <see cref="IsErr"/>.
-    /// Returns self.
-    /// </summary>
-    public Res<T> RunWhenErr(Action action)
-    {
-        if (IsErr)
-            action();
-        return this;
+        if (this.errorMessage == null)
+            return this;
+        string msg = this.errorMessage + Environment.NewLine + Res.GetErrorMessage(errorMessage, when);
+        return new(msg, null);
     }
 
 
     // Common
     /// <summary>
-    /// Converts the option to its equivalent string representation.
+    /// Returns the text representation of the option.
     /// </summary>
-    public override string ToString() => IsOk ? $"Ok{value.Unwrap()}" : res.ToString();
+    public override string ToString() => IsOk ? $"Ok{value}" : $"Err({errorMessage})";
     /// <summary>
-    /// Converts the option to its equivalent string representation.
+    /// Returns the text representation of the result; value will be <paramref name="format"/>ted when <see cref="IsOk"/>.
     /// </summary>
-    /// <param name="detailed">Determines whether the error log wil be detailed or not.</param>
-    public string ToString(bool detailed) => IsOk ? $"Ok{value.Unwrap()}" : res.ToString(detailed);
+    /// <param name="format">Determines whether the error log wil be detailed or not.</param>
+    public string ToString(string format)
+    {
+        if (IsErr)
+            return $"Err({errorMessage})";
+        var method = typeof(T).GetMethod(nameof(ToString), new[] { typeof(string) });
+        if (method == null)
+            return $"Ok({value})";
+        string strValue = (string)method.Invoke(value, new[] { format });
+        return $"Ok({strValue})";
+    }
     /// <summary>
     /// Returns whether this result is equal to the <paramref name="other"/>.
     /// </summary>
-    public bool Equals(Res<T> other)
-        => this == other;
+    public bool Equals(Res<T> other) => this == other;
     /// <summary>
     /// Returns whether <paramref name="first"/> is equal to <paramref name="second"/>.
     /// </summary>
-    public static bool operator ==(Res<T> first, Res<T> second)
-    {
-        if (first.IsErr)
-            return second.IsErr;
-        else
-            return !second.IsErr && first.value == second.value;
-    }
+    public static bool operator ==(Res<T> first, Res<T> second) => first.IsErr ? false : !second.IsErr && first.value.Equals(second.value);
     /// <summary>
     /// Returns whether <paramref name="first"/> is not equal to <paramref name="second"/>.
     /// </summary>
-    public static bool operator !=(Res<T> first, Res<T> second)
-    {
-        if (first.IsErr)
-            return !second.IsErr;
-        else
-            return second.IsErr || first.value != second.value;
-    }
+    public static bool operator !=(Res<T> first, Res<T> second) => first.IsErr ? true : second.IsErr || !first.value.Equals(second.value);
     /// <summary>
     /// Returns whether this result is equal to the <paramref name="obj"/>.
     /// </summary>
-    public override bool Equals([NotNullWhen(true)] object obj)
-        => (obj is Res<T>) ? (this == (Res<T>)obj) : false;
+    public override bool Equals(object obj) => (obj is Res<T>) ? (this == (Res<T>)obj) : false;
     /// <summary>
     /// Serves as the default hash function.
     /// </summary>
-    public override int GetHashCode()
-            => IsErr ? int.MinValue : value.GetHashCode();
+    public override int GetHashCode() => IsErr ? errorMessage.GetHashCode() : value.GetHashCode();
     /// <summary>
     /// Returns true if this <see cref="IsOk"/> and its unwrapped value is equal to the <paramref name="other"/>; false otherwise.
     /// </summary>
-    public bool Equals(T other)
-        => this == other;
+    public bool Equals(T other) => this == other;
     /// <summary>
     /// Returns true if this <see cref="IsOk"/>, the other <see cref="Opt{T}.IsSome"/>; and its unwrapped value is equal to <paramref name="other"/>'s unwrapped value; false otherwise.
     /// </summary>
-    public bool Equals(Opt<T> other)
-        => IsOk && other.IsSome && value.Equals(other.Unwrap());
+    public bool Equals(Opt<T> other) => IsOk && other.IsSome && value.Equals(other.value);
 }
