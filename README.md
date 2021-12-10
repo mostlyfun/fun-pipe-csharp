@@ -1,11 +1,15 @@
 # fun-pipe-csharp
 Functional pipe methods for csharp. This library aims to provide the ergonomy of functional approaches in C# to improve expressiveness and reduce noise of the code.
 * `Opt<T>`: As the Option of Rust or F#: _The option type in F# is used when an actual value might not exist for a named value or variable. An option has an underlying type and can hold a value of that type, or it might not have a value.
+  * `Opt<T>`: either `Some(T value)` or `None`.
 * `Res` and `Res<T>`: As the Result of Rust or F#: _The Result<'T,'TFailure> type lets you write error-tolerant code that can be composed._ Here, `Res` is just as an enum holding having Ok or Err states. `Res<T>`, on the other hand, can hold a value of T when `IsOk`. Both hold an `ErrMsg` when `IsErr` that can be customized; furthermore, they can hold on a caught exception, which can be logged, thrown any time or silently ignored.
-* `Pipe` and `Pipe<T>`: Pipes work similar to forward pipe operator of F#. `Pipe` (`Pipe<T>`) always holds a `Res` (`Res<T>`), and can be chained with all sorts of Run (Action) and Map methods (Func). Whenever, the pipe reaches the `Err` state at any time, further steps are immediately bypassed. The caller eventually decides what to do with the error (ignore, log, throw). TryRun and TryMap methods hides the lengthy try-catch blocks, while mapping any caught exception to an Err result. Finally, all chaining methods contain also the async versions.
+  * `Res`: either `Ok` or `Err(errorMessage)`.
+  * `Res<T>`: either `Ok(T value)` or `Err(errorMessage)`.
+  * -> The reason a more flexible `Res<TOk, TErr>` is not implemented is the same as the reason of not having a proper `Either` in C#. The problem is explained here: https://github.com/dotnet/runtime/issues/43486, feel free to upvote / watch.
+* `Map`, `TryMap`. `Run`, `TryRun`, `MapAsync`, `TryMapAsync`. `RunAsync`, `TryRunAsync`: Extension methods with these names are implemented for any `T`, `Opt<T>`, `Res` and `Res<T>`. They work expectedly for `T`, while they allow for bypassing `None` and `Err` tracks for the others to enable expressive codes that is available in functional programming languages, as with the pipeline operator in F#.
 
-## Example Pipe
-Complete example can be found here: [/src/Fun.Pipe/Fun.Pipe.Examples/ExamplePipe.cs](https://github.com/mostlyfun/fun-pipe-csharp/blob/main/src/Fun.Pipe/Fun.Pipe.Examples/ExamplePipe.cs).
+## Example Pipe: Parse
+Complete example can be found here: [/src/Fun.Pipe/Fun.Pipe.Examples/ExamplePipeParse.cs](https://github.com/mostlyfun/fun-pipe-csharp/blob/main/src/Fun.Pipe/Fun.Pipe.Examples/ExamplePipeParse.cs).
 
 Consider a classical file parsing scenario:
 * We get the filepath from user. As common, the user may or maynot provide the input. Therefore, `null` check is required for the traditional `GetFilepathFromUserMaybeNull` method; while `GetFilepathFromUser` returns an option which can be automatically handled in a pipe.
@@ -19,47 +23,70 @@ We encounter several issues with the imperative style:
 * Try-catch blocks are necessary; however, they make the code verbose and add unnecessary scopes.
 
 ```csharp
-static void Imperative(double flip)
-{
-    string filepath = GetFilepathFromUserMaybeNull(flip);
-    if (filepath == null)
+    static int Imperative(double flip)
     {
-        Log("Aborting as the filepath is not provided.");
-        return;
-    }
+        string filepath = GetFilepathFromUserMaybeNull(flip);
+        if (filepath == null)
+        {
+            Log("Aborting as the filepath is not provided.");
+            return -1; // misuse -1 to denote error!
+        }
 
-    int[] numbers;
-    try
-    {
-        numbers = RiskyParse(filepath);
-    }
-    catch (Exception e)
-    {
-        Log("Failed parsing amounts: " + e.Message);
-        return;
-    }
+        int[] numbers;
+        try
+        {
+            numbers = RiskyParse(filepath);
+        }
+        catch (Exception e)
+        {
+            Log("Failed parsing amounts: " + e.Message);
+            return -1; // misuse -1 to denote error!
+        }
 
-    try
-    {
-        LogSumAmounts(numbers);
+        try
+        {
+            return LogAndGetSumAmounts(numbers);
+        }
+        catch (Exception e)
+        {
+            Log("Failed getting total amount: " + e.Message);
+            return -1; // misuse -1 to denote error!
+        }
     }
-    catch (Exception e)
-    {
-        Log("Failed getting total amount: " + e.Message);
-    }
-}
 ```
 
 #### With Pipe
 Exact same flow can be achieved with pipes without sacrificing expressiveness of the code.
 ```csharp
-static void PipeCompact(double flip)
-{
-    NewPipe(OnErr.Log)                            // initiates a new pipe which will do nothing but log the errors
-    .Map(() => GetFilepathFromUser(flip))         // result at this point is: Ok(filepath) or Err (None's are automatically mapped to Err).
-    .TryMap(filepath => RiskyParse(filepath))     // result at this point is: Ok(numbers) or Err (TryMap catches if the parsing throws and maps to Err)
-    .TryRun(numbers => LogSumAmounts(numbers));   // result at this point is: Ok or Err (TryRun catches if the summing throws and maps to Err)
-}
+    static Res<int> PipeExplicit(double flip)
+    {
+        // one operation per line to see all type maps; note that 'var's on the lhs's would also be perfectly fine
+        Opt<string> filepath = GetFilepathFromUser(flip);               // note that GetFilepathFromUser now rightfully returns Opt<string> as the user might choose not to provide
+        Res<int[]> numbers = filepath.TryMap(f => RiskyParse(f));       // we use 'filepath.TryMap' rather than 'TryMap' to prevent the RiskyParse call when filepath.IsNone
+        Res<int> sum = numbers.TryMap(n => LogAndGetSumAmounts(n));     // note that int[]->int method LogAndGetSumAmounts is mapped to Res<int[]>->Res<int> with TryMap.
+        return sum.MsgIfErr("failed to get sum from file").LogIfErr();  // just to make the error message contain the whole story and log; one could've just returned sum
+    }
+```
+or as a single chain:
+```csharp
+    static Res<int> PipeChain(double flip)
+    {
+        return Map(() => GetFilepathFromUser(flip))
+            .TryMap(filepath => RiskyParse(filepath))
+            .TryMap(numbers => LogAndGetSumAmounts(numbers))
+            .MsgIfErr("failed to get sum from file").LogIfErr();
+    }
+```
+or the corresponding async version:
+```csharp
+    static async Task<Res<int>> PipeExplicitAsync(double flip)
+    {
+        // note that this is exactly same as Example.PipeExplicit; except that methods are replaced with their async counterparts
+        Opt<string> filepath = await GetFilepathFromUserAsync(flip);
+        Res<int[]> numbers = await filepath.TryMapAsync(f => RiskyParseAsync(f));
+        Res<int> sum = await numbers.TryMapAsync(n => LogAndGetSumAmountsAsync(n));
+        return sum.MsgIfErr("failed to get sum from file").LogIfErr();
+    }
 ```
 Note that, manual early exits (as `return`s in the imperative) are not required. Furthermore, Err encountered at any stage will not be lost but carried forward.
 
