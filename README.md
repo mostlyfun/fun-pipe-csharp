@@ -6,7 +6,7 @@ Functional pipe methods for csharp. This library aims to provide to some extent 
   * `Res`: either `Ok` or `Err(errorMessage)`.
   * `Res<T>`: either `Ok(T value)` or `Err(errorMessage)`.
   * -> _Why not a proper `Res<TOk, TErr>` type?_ The reason is the same why we do not have a proper `Choice` or `Either` type in C#. The problem is explained here: https://github.com/dotnet/runtime/issues/43486, feel free to upvote / watch.
-* `Map`, `TryMap`. `Run`, `TryRun`, `MapAsync`, `TryMapAsync`. `RunAsync`, `TryRunAsync`: Extension methods with these names are implemented for any `T`, `Opt<T>`, `Res` and `Res<T>`. They work expectedly for `T`:
+* `Map`, `TryMap`. `Run`, `Try`, `MapAsync`, `TryMapAsync`. `RunAsync`, `TryAsync`: Extension methods with these names are implemented for any `T`, `Opt<T>`, `Res` and `Res<T>`. They work expectedly for `T`:
   * `Map` methods transform the input to another value,
   * `Run` methods execute an action, and returns back the value,
   * `Try...` methods execute the map-or-run lambda within a `try-catch` block, and always return `Res` or `Res<T>` since exceptions/errors are expected,
@@ -15,6 +15,18 @@ Functional pipe methods for csharp. This library aims to provide to some extent 
   * lambdas are executed only for the good paths: `Some` or `Ok`,
   * the methods do nothing but carry on the result when the input is `None` / `Err`; result of any abovementioned methods while the input is `None` / `Err` is also `None` / `Err`;
   * this enables continuation as excellently explained by Scott Wlaschin with [railway analogy](https://www.youtube.com/watch?v=srQt1NAHYC0).
+ 
+# Continuation Methods
+## for any T
+* `Map`, `TryMap`, `MapAsync`, `TryMapAsync` -> converts value to another, which might be wrapped in `Opt<T>` or `Res<T>`
+* `Run`, `Try`, `RunAsync`, `TryAsync` -> executes an action, returns back itself, which might be wrapped in `Res<T>` for `Try` methods.
+## for Opt<T>
+ * `ThrowIfNone`, `LogIfNone` -> throws or logs the error only if the option is None, returns back itself.
+ * `RunIfNone` -> excecutes the parameterless action only if the option is None, returns back itself.
+ ## for Res<T>
+ * `ThrowIfErr`, `LogIfErr` -> throws or logs the error only if the option is Err, returns back itself.
+ * `RunIfErr` -> excecutes the parameterless action only if the option is Err, returns back itself.
+ 
 
 ## Example Pipe: Parse
 Complete example can be found here: [/src/Fun.Pipe/Fun.Pipe.Examples/ExamplePipeParse.cs](https://github.com/mostlyfun/fun-pipe-csharp/blob/main/src/Fun.Pipe/Fun.Pipe.Examples/ExamplePipeParse.cs).
