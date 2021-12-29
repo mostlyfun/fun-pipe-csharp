@@ -25,6 +25,21 @@ public static class ExampleOpt
         var nullString = Some<string>(null);
         Assert(nullString.IsNone, "null's must be mapped to None; Some's must be null-free: if it IsSome, it is not null");
 
+        // Opt as result of value Validation
+        int number1 = -10, number2 = 42;
+        var nonneg1 = number1.Validate(x => x >= 0);
+        Assert(nonneg1.IsNone, "Validate must map value that does not satisfy the validation rule to None");
+        var nonneg2 = number2.Validate(x => x >= 0);
+        Assert(nonneg2 == Some(42), "Validate must map value that satisfies the validation rule to Some(value)");
+
+
+        // Parse-or-None by string.Parse{Type}OrNone methods
+        var notInt = "not-a-number".ParseIntOrNone();
+        Assert(notInt.IsNone, "ParseIntOrNone must return None when input string is not correct");
+        var someDate = "2021-05-05".ParseDateOnlyOrNone();
+        Assert(someDate.IsSome, "ParseDateOnlyOrNone must return Some-DateOnly when input string is correct");
+
+
         // Some.Unwrap(): when sure that it IsSome
         var optDuration = Some(TimeSpan.FromSeconds(42));
         var duration = optDuration.Unwrap();    // would've thrown if it were IsNone, so must be called only when the Opt is checked to be IsSome
@@ -98,6 +113,19 @@ public static class ExampleOpt
         var getPersonsWithSpecificTimeout = GetQuery("select-pesons", Some(10800));
         getPersonsWithSpecificTimeout = GetQuery("select-pesons", 10800);   // implicitly: 10800 -> Some(10800)
 
+
+        // Match
+        var someWizard = Some(new Wizard("Merlin", 42));
+        int nbSpells = someWizard.Match(    // match with explicit argument names
+            some: w => w.NbSpells,
+            none: () => 0);
+        nbSpells = someWizard.Match(w => w.NbSpells, () => 0);  // match with argument order
+        nbSpells = someWizard.Match(w => w.NbSpells, 0);        // match with default value for the None case
+        Assert(nbSpells == 42);
+        int nbSpellsOfNone = None<Wizard>().Match(w => w.NbSpells, 0);
+        Assert(nbSpellsOfNone == 0);
+
+
         // Map, where None track is bypassed
         var someNumber = Some(42f);
         var lessThan100 = someNumber.Map(x => MathF.Sqrt(x)).Map(sqrt => sqrt < 10);
@@ -151,26 +179,57 @@ public static class ExampleOpt
 
 
         // regular collections
-        var valueCollection = new List<Wizard>();
+        var valueList = new List<Wizard>();
         // note that FirstOrDefault would return 'null' that we want to avoid
-        Assert(valueCollection.FirstOrNone() == None<Wizard>(), "FirstOrNone of empty collection must return None");
+        Assert(valueList.FirstOrNone() == None<Wizard>(), "FirstOrNone of empty collection must return None");
+        Assert(valueList.LastOrNone() == None<Wizard>(), "LastOrNone of empty collection must return None");
 
         Wizard unfortunatelyNullPerson = null;
-        valueCollection.Add(unfortunatelyNullPerson);
-        Assert(valueCollection.FirstOrNone() == None<Wizard>(), "FirstOrNone must skip null's; hence, should return None here");
+        valueList.Add(unfortunatelyNullPerson);
+        Assert(valueList.FirstOrNone() == None<Wizard>(), "FirstOrNone must skip null's; hence, should return None here");
+        Assert(valueList.LastOrNone() == None<Wizard>(), "LastOrNone must skip null's; hence, should return None here");
 
-        valueCollection.Add(new Wizard("Saruman", 42));
-        valueCollection.Add(new Wizard("Glinda", 42)); // collection at this point: [ null, Saruman, Glinda ]
-        Assert(valueCollection.FirstOrNone().IsSome, "FirstOrNone must return Some, since the collection has some non-null values");
-        Assert(valueCollection.FirstOrNone() == new Wizard("Saruman", 42), "FirstOrNone must return Saruman, skipping the null");
+        valueList.Add(new Wizard("Saruman", 42));
+        valueList.Add(new Wizard("Glinda", 42));
+        valueList.Add(null);  // collection at this point: [ null, Saruman, Glinda, null ]
+        Assert(valueList.FirstOrNone().IsSome, "FirstOrNone must return Some, since the collection has some non-null values");
+        Assert(valueList.FirstOrNone() == new Wizard("Saruman", 42), "FirstOrNone must return Saruman, skipping the null");
+        Assert(valueList.LastOrNone().IsSome, "LastOrNone must return Some, since the collection has some non-null values");
+        Assert(valueList.LastOrNone() == new Wizard("Glinda", 42), "LastOrNone must return Glinda, skipping the null");
+
+
+        // GetValueOrNone as counterpart of Dictionary.TryGetValue
+        var dictWizards = new Dictionary<string, Wizard>();
+        dictWizards.Add("Merlin", new Wizard("Merlin", 42));
+        dictWizards.Add("Bad Wizard", null);
+        var gotMerlin = dictWizards.GetValueOrNone("Merlin");
+        Assert(gotMerlin == Some(new Wizard("Merlin", 42)), "GetValueOrNone must return Some of value when the key exists");
+        var gotNoWizard = dictWizards.GetValueOrNone("no wizard");
+        Assert(gotNoWizard.IsNone, "GetValueOrNone must return None when the key is absent");
+
+        // eleavate regular collections to Opt collections
+        List<Opt<Wizard>> optList = valueList.ToOptList();    // must map null's to None
+        Assert(optList.Count == valueList.Count);
+        for (var i = 0; i < optList.Count; i++)
+            Assert(valueList[i] == null ? optList[i].IsNone : optList[i].IsSome);
+        // can similarly convert to other enumerables
+        Opt<Wizard>[] optArr = valueList.ToOptArray();
+        IEnumerable<Opt<Wizard>> optEnumerable = valueList.ToOptEnumerable();
+        // finally, Dictionary<TKey, TValue> can be converted into Dictionary<TKey, Opt<TValue>>
+        var dictMaybeWizards = dictWizards.ToOptDictionary();
+        Assert(dictMaybeWizards["Merlin"] == new Wizard("Merlin", 42));
+        Assert(dictMaybeWizards["Bad Wizard"].IsNone);
+
 
         // Opt collections
         var noWizards = new List<Opt<Wizard>>() { None<Wizard>(), None<Wizard>() };
         Assert(noWizards.FirstOrNone().IsNone, "FirstOrNone must return None");
+        Assert(noWizards.LastOrNone().IsNone, "LastOrNone must return None");
         Assert(noWizards.UnwrapValues().Any() == false, "UnwrapValues not yield any values, since there is no Some in the collection");
 
         var optPersons = new Opt<Wizard>[] { None<Wizard>(), merlin, new Wizard("Morgana", 42), None<Wizard>() };
-        Assert(optPersons.FirstOrNone() == merlin, "FirstOrNone must return someWizard, which is Merlin");
+        Assert(optPersons.FirstOrNone() == merlin, "FirstOrNone must return some Wizard, which is Merlin");
+        Assert(optPersons.LastOrNone() == new Wizard("Morgana", 42), "LastOrNone must return some Wizard, which is Morgana");
         Assert(optPersons.UnwrapValues().Count() == 2, "UnwrapValues must yield two unwrapped Wizard values: Merlin and Morgana");
         Assert(string.Join(" | ", optPersons.UnwrapValues().Select(p => p.Name)) == "Merlin | Morgana");
     }

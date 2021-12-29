@@ -48,7 +48,6 @@ public static class ExampleRes
         Assert(errFloat.IsErr, "must be IsErr");
         Assert(errFloat != Err<float>("something went wrong"), "Errors are never equal to anything");
 
-
         // Res<T> from TryMap method
         divider = 5;
         var resOneOverFive = TryMap(() => 1 / divider);
@@ -62,6 +61,13 @@ public static class ExampleRes
         // null-free
         var nullString = Ok<string>(null);
         Assert(nullString.IsErr, "null's must be mapped to Err; Ok's must be null-free: if it IsOk, it is not null");
+
+        // Res as result of value Validation
+        int number1 = -10, number2 = 42;
+        var nonneg1 = number1.Validate(x => x >= 0, "found negative");
+        Assert(nonneg1.IsErr, "Validate must map value that does not satisfy the validation rule to Err");
+        var nonneg2 = number2.Validate(x => x >= 0, "found negative");
+        Assert(nonneg2 == Ok(42), "Validate must map value that satisfies the validation rule to Ok(value)");
 
 
         // Ok<T>.Unwrap(): when sure that it IsOk
@@ -176,6 +182,18 @@ public static class ExampleRes
         Assert(wizardFromException.ErrorMessage.Unwrap().Contains("IndexOutOfRangeException"));
 
 
+        // Match
+        var okWizard = Ok(new Wizard("Merlin", 42));
+        int nbSpells = okWizard.Match(  // match with explicit argument names
+            ok: w => w.NbSpells,
+            err: _errMsg => 0);
+        nbSpells = okWizard.Match(w => w.NbSpells, _ => 0); // match with argument order
+        nbSpells = okWizard.Match(w => w.NbSpells, 0);  // match with default value for the None case
+        Assert(nbSpells == 42);
+        int nbSpellsOfErr = Err<Wizard>("magical error").Match(w => w.NbSpells, 0);
+        Assert(nbSpellsOfErr == 0);
+
+
         // Map, where Err track is bypassed
         var okHasSpells = merlin.Map(w => w.NbSpells > 0);
         Assert(okHasSpells.IsOk);
@@ -217,10 +235,13 @@ public static class ExampleRes
         // Res collections
         var errPersons = new List<Res<Wizard>>() { wizardFromException, Err<Wizard>("problem in grabbing wizard") };  // Err, Err
         Assert(errPersons.FirstOrNone().IsNone, "FirstOrNone must return None");
+        Assert(errPersons.LastOrNone().IsNone, "LastOrNone must return None");
         Assert(errPersons.UnwrapValues().Any() == false, "UnwrapValues must not yield any");
 
-        var resPersons = new Res<Wizard>[] { wizardFromException, new Wizard("Jafar", 42), Err<Wizard>("wrong name"), new Wizard("Albus", 42) };  // Err, Jafar, Err, Albus
+        var resPersons = new Res<Wizard>[]
+            { wizardFromException, new Wizard("Jafar", 42), Err<Wizard>("wrong name"), new Wizard("Albus", 42) };  // Err, Jafar, Err, Albus
         Assert(resPersons.FirstOrNone() == new Wizard("Jafar", 42), "FirstOrNone must return Jafar");
+        Assert(resPersons.LastOrNone() == new Wizard("Albus", 42), "LastOrNone must return Albus");
         Assert(resPersons.UnwrapValues().Count() == 2, "UnwrapValues must yield two unwrapped value");
         Assert(string.Join(" | ", resPersons.UnwrapValues().Select(p => p.Name)) == "Jafar | Albus");
     }
