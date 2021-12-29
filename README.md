@@ -1,5 +1,11 @@
 # fun-pipe-csharp
 Functional pipe methods for csharp. This library aims to provide to some extent the expresiveness of functional approaches in C#.
+The library is available as a NuGet package: [https://www.nuget.org/packages/fun-pipe/](https://www.nuget.org/packages/fun-pipe/).
+
+```powershell
+PM> Install-Package fun-pipe
+```
+
 
 ## What it helps with
 * Proper handling of nulls; make it explicit whenever someting might lack a value with [`Opt`](#opt-in-a-nutshell).
