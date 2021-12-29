@@ -1,8 +1,16 @@
 # fun-pipe-csharp
-Functional pipe methods for csharp. This library aims to provide to some extent the expresiveness of functional approaches in C#. The library provides three types `Opt<T>`, `Res` and `Res<T>` which enable the map and run methods that act similar to the pipeline operator.
-* `Opt<T>`: Mimics the Option or Maybe types in functional languages: _The option type in F# is used when an actual value might not exist for a named value or variable. An option has an underlying type and can hold a value of that type, or it might not have a value._
+Functional pipe methods for csharp. This library aims to provide to some extent the expresiveness of functional approaches in C#.
+
+## What it helps with
+* Proper handling of nulls; make it explicit whenever someting might lack a value with [`Opt`](#opt-in-a-nutshell).
+* Proper handling of failures; do not throw or handle, just return Ok(value) or propagate the error and let the caller decide what to do with [`Res`](#res-in-a-nutshell).
+* Writing more expressive code using the [continuation methods](#continuation-methods) free of vebose error handling, early returns, etc.
+
+## Briefly
+The library provides three types `Opt<T>`, `Res` and `Res<T>` which enable the map and run methods that act similar to the pipeline operator.
+* `Opt<T>`: Learning from Option or Maybe types in functional languages: _The option type in F# is used when an actual value might not exist for a named value or variable. An option has an underlying type and can hold a value of that type, or it might not have a value._
   * `Opt<T>`: either `Some(T value)` or `None`.
-* `Res` and `Res<T>`: As the Result of Rust or F#: _The Result<'T,'TFailure> type lets you write error-tolerant code that can be composed._ Here, `Res` is just as an enum having Ok or Err states. `Res<T>`, on the other hand, holds a non-null value of T when `IsOk`. Both hold an `ErrMsg` when `IsErr` that can be customized; which can be logged, thrown at any time or silently ignored.
+* `Res` and `Res<T>`: Similar to the Result of F# or Rust: _The Result<'T,'TFailure> type lets you write error-tolerant code that can be composed._ Here, `Res` is just as an enum having Ok or Err states. `Res<T>`, on the other hand, holds a non-null value of T when `IsOk`. Both hold an `ErrMsg` when `IsErr` that can be customized; which can be logged, thrown at any time or silently ignored.
   * `Res`: either `Ok` or `Err(errorMessage)`.
   * `Res<T>`: either `Ok(T value)` or `Err(errorMessage)`.
   * -> _Why not a proper `Res<TOk, TErr>` type?_ The reason is the same why we do not have a proper `Choice` or `Either` type in C#. The problem is explained here: https://github.com/dotnet/runtime/issues/43486, feel free to upvote / watch.
@@ -23,10 +31,11 @@ Functional pipe methods for csharp. This library aims to provide to some extent 
 ## for Opt<T>
  * `ThrowIfNone`, `LogIfNone` -> throws or logs the error only if the option is None, returns back itself.
  * `RunIfNone` -> excecutes the parameterless action only if the option is None, returns back itself.
+ * `Match` -> maps the option into a value depending on either it is Some or None.
  ## for Res<T>
  * `ThrowIfErr`, `LogIfErr` -> throws or logs the error only if the option is Err, returns back itself.
  * `RunIfErr` -> excecutes the parameterless action only if the option is Err, returns back itself.
- 
+ * `Match` -> maps the result into a value depending on either it is Ok or Err.
 
 ## Example Pipe: Parse
 Complete example can be found here: [/src/Fun.Pipe/Fun.Pipe.Examples/ExamplePipeParse.cs](https://github.com/mostlyfun/fun-pipe-csharp/blob/main/src/Fun.Pipe/Fun.Pipe.Examples/ExamplePipeParse.cs).
@@ -231,7 +240,7 @@ static async Task<Res> Pipe(double flip, string wizardGuid)
 }
 ```
 
-## Opt
+## Opt in a nutshell
 Complete example can be found here: [/src/Fun.Pipe/Fun.Pipe.Examples/ExampleOpt.cs](https://github.com/mostlyfun/fun-pipe-csharp/blob/main/src/Fun.Pipe/Fun.Pipe.Examples/ExampleOpt.cs).
 
 ```csharp
@@ -252,6 +261,21 @@ Assert(noneFloat == None<float>(), "must be equal to None");
 // null-free
 var nullString = Some<string>(null);
 Assert(nullString.IsNone, "null's must be mapped to None; Some's must be null-free: if it IsSome, it is not null");
+
+// Opt as result of value Validation
+int number1 = -10, number2 = 42;
+var nonneg1 = number1.Validate(x => x >= 0);
+Assert(nonneg1.IsNone, "Validate must map value that does not satisfy the validation rule to None");
+var nonneg2 = number2.Validate(x => x >= 0);
+Assert(nonneg2 == Some(42), "Validate must map value that satisfies the validation rule to Some(value)");
+
+
+// Parse-or-None by string.Parse{Type}OrNone methods
+var notInt = "not-a-number".ParseIntOrNone();
+Assert(notInt.IsNone, "ParseIntOrNone must return None when input string is not correct");
+var someDate = "2021-05-05".ParseDateOnlyOrNone();
+Assert(someDate.IsSome, "ParseDateOnlyOrNone must return Some-DateOnly when input string is correct");
+
 
 // Some.Unwrap(): when sure that it IsSome
 var optDuration = Some(TimeSpan.FromSeconds(42));
@@ -326,6 +350,19 @@ var getPersons = GetQuery("select persons", None<int>());
 var getPersonsWithSpecificTimeout = GetQuery("select-pesons", Some(10800));
 getPersonsWithSpecificTimeout = GetQuery("select-pesons", 10800);   // implicitly: 10800 -> Some(10800)
 
+
+// Match
+var someWizard = Some(new Wizard("Merlin", 42));
+int nbSpells = someWizard.Match(    // match with explicit argument names
+    some: w => w.NbSpells,
+    none: () => 0);
+nbSpells = someWizard.Match(w => w.NbSpells, () => 0);  // match with argument order
+nbSpells = someWizard.Match(w => w.NbSpells, 0);        // match with default value for the None case
+Assert(nbSpells == 42);
+int nbSpellsOfNone = None<Wizard>().Match(w => w.NbSpells, 0);
+Assert(nbSpellsOfNone == 0);
+
+
 // Map, where None track is bypassed
 var someNumber = Some(42f);
 var lessThan100 = someNumber.Map(x => MathF.Sqrt(x)).Map(sqrt => sqrt < 10);
@@ -379,31 +416,62 @@ Assert(noneWizard.ToRes().IsErr, "ToRes must map None to Err");
 
 
 // regular collections
-var valueCollection = new List<Wizard>();
+var valueList = new List<Wizard>();
 // note that FirstOrDefault would return 'null' that we want to avoid
-Assert(valueCollection.FirstOrNone() == None<Wizard>(), "FirstOrNone of empty collection must return None");
+Assert(valueList.FirstOrNone() == None<Wizard>(), "FirstOrNone of empty collection must return None");
+Assert(valueList.LastOrNone() == None<Wizard>(), "LastOrNone of empty collection must return None");
 
 Wizard unfortunatelyNullPerson = null;
-valueCollection.Add(unfortunatelyNullPerson);
-Assert(valueCollection.FirstOrNone() == None<Wizard>(), "FirstOrNone must skip null's; hence, should return None here");
+valueList.Add(unfortunatelyNullPerson);
+Assert(valueList.FirstOrNone() == None<Wizard>(), "FirstOrNone must skip null's; hence, should return None here");
+Assert(valueList.LastOrNone() == None<Wizard>(), "LastOrNone must skip null's; hence, should return None here");
 
-valueCollection.Add(new Wizard("Saruman", 42));
-valueCollection.Add(new Wizard("Glinda", 42)); // collection at this point: [ null, Saruman, Glinda ]
-Assert(valueCollection.FirstOrNone().IsSome, "FirstOrNone must return Some, since the collection has some non-null values");
-Assert(valueCollection.FirstOrNone() == new Wizard("Saruman", 42), "FirstOrNone must return Saruman, skipping the null");
+valueList.Add(new Wizard("Saruman", 42));
+valueList.Add(new Wizard("Glinda", 42));
+valueList.Add(null);  // collection at this point: [ null, Saruman, Glinda, null ]
+Assert(valueList.FirstOrNone().IsSome, "FirstOrNone must return Some, since the collection has some non-null values");
+Assert(valueList.FirstOrNone() == new Wizard("Saruman", 42), "FirstOrNone must return Saruman, skipping the null");
+Assert(valueList.LastOrNone().IsSome, "LastOrNone must return Some, since the collection has some non-null values");
+Assert(valueList.LastOrNone() == new Wizard("Glinda", 42), "LastOrNone must return Glinda, skipping the null");
+
+
+// GetValueOrNone as counterpart of Dictionary.TryGetValue
+var dictWizards = new Dictionary<string, Wizard>();
+dictWizards.Add("Merlin", new Wizard("Merlin", 42));
+dictWizards.Add("Bad Wizard", null);
+var gotMerlin = dictWizards.GetValueOrNone("Merlin");
+Assert(gotMerlin == Some(new Wizard("Merlin", 42)), "GetValueOrNone must return Some of value when the key exists");
+var gotNoWizard = dictWizards.GetValueOrNone("no wizard");
+Assert(gotNoWizard.IsNone, "GetValueOrNone must return None when the key is absent");
+
+// eleavate regular collections to Opt collections
+List<Opt<Wizard>> optList = valueList.ToOptList();    // must map null's to None
+Assert(optList.Count == valueList.Count);
+for (var i = 0; i < optList.Count; i++)
+    Assert(valueList[i] == null ? optList[i].IsNone : optList[i].IsSome);
+// can similarly convert to other enumerables
+Opt<Wizard>[] optArr = valueList.ToOptArray();
+IEnumerable<Opt<Wizard>> optEnumerable = valueList.ToOptEnumerable();
+// finally, Dictionary<TKey, TValue> can be converted into Dictionary<TKey, Opt<TValue>>
+var dictMaybeWizards = dictWizards.ToOptDictionary();
+Assert(dictMaybeWizards["Merlin"] == new Wizard("Merlin", 42));
+Assert(dictMaybeWizards["Bad Wizard"].IsNone);
+
 
 // Opt collections
 var noWizards = new List<Opt<Wizard>>() { None<Wizard>(), None<Wizard>() };
 Assert(noWizards.FirstOrNone().IsNone, "FirstOrNone must return None");
+Assert(noWizards.LastOrNone().IsNone, "LastOrNone must return None");
 Assert(noWizards.UnwrapValues().Any() == false, "UnwrapValues not yield any values, since there is no Some in the collection");
 
 var optPersons = new Opt<Wizard>[] { None<Wizard>(), merlin, new Wizard("Morgana", 42), None<Wizard>() };
-Assert(optPersons.FirstOrNone() == merlin, "FirstOrNone must return someWizard, which is Merlin");
+Assert(optPersons.FirstOrNone() == merlin, "FirstOrNone must return some Wizard, which is Merlin");
+Assert(optPersons.LastOrNone() == new Wizard("Morgana", 42), "LastOrNone must return some Wizard, which is Morgana");
 Assert(optPersons.UnwrapValues().Count() == 2, "UnwrapValues must yield two unwrapped Wizard values: Merlin and Morgana");
 Assert(string.Join(" | ", optPersons.UnwrapValues().Select(p => p.Name)) == "Merlin | Morgana");
 ```
 
-## Res
+## Res in a nutshell
 Complete example can be found here: [/src/Fun.Pipe/Fun.Pipe.Examples/ExampleRes.cs](https://github.com/mostlyfun/fun-pipe-csharp/blob/main/src/Fun.Pipe/Fun.Pipe.Examples/ExampleRes.cs).
 
 ```csharp
@@ -440,7 +508,6 @@ var errFloat = Err<float>("something went wrong");  // T has to be explicit
 Assert(errFloat.IsErr, "must be IsErr");
 Assert(errFloat != Err<float>("something went wrong"), "Errors are never equal to anything");
 
-
 // Res<T> from TryMap method
 divider = 5;
 var resOneOverFive = TryMap(() => 1 / divider);
@@ -454,6 +521,13 @@ Assert(resOneOverZero.ErrorMessage.IsSome && resOneOverZero.ErrorMessage.Unwrap(
 // null-free
 var nullString = Ok<string>(null);
 Assert(nullString.IsErr, "null's must be mapped to Err; Ok's must be null-free: if it IsOk, it is not null");
+
+// Res as result of value Validation
+int number1 = -10, number2 = 42;
+var nonneg1 = number1.Validate(x => x >= 0, "found negative");
+Assert(nonneg1.IsErr, "Validate must map value that does not satisfy the validation rule to Err");
+var nonneg2 = number2.Validate(x => x >= 0, "found negative");
+Assert(nonneg2 == Ok(42), "Validate must map value that satisfies the validation rule to Ok(value)");
 
 
 // Ok<T>.Unwrap(): when sure that it IsOk
@@ -469,8 +543,8 @@ Assert(duration.Seconds == 42, "must be unwrapped to 42 secs");
 resDuration = Err<TimeSpan>("sth wrong");
 try
 {
-    duration = resDuration.Unwrap();
-    Assert(false, "must have thrown an exception while unwrapping None");
+   duration = resDuration.Unwrap();
+   Assert(false, "must have thrown an exception while unwrapping None");
 }
 catch { /*expected to end up here*/ }
 
@@ -508,23 +582,23 @@ Assert(Ok(Some(Ok(12))).GetType() == typeof(Res<int>), "result-of-option must be
 // Res for actions that can fail
 static Res PutWizard(string databaseName, Wizard wizard, double someNumber)
 {
-    if (databaseName == "bad-db")
-    {
-        // no way we can push to the bad database
-        return Err("wrong database");
-    }
-    // even if the connection is valid, transaction might fail
-    try
-    {
-        // try to push the wizard here, which will fail if someNumber < 0.1
-        if (someNumber < 0.1)
-            throw new Exception("unlucky");
-        return Ok();
-    }
-    catch (Exception e)
-    {
-        return Err(e, nameof(PutWizard));
-    }
+   if (databaseName == "bad-db")
+   {
+       // no way we can push to the bad database
+       return Err("wrong database");
+   }
+   // even if the connection is valid, transaction might fail
+   try
+   {
+       // try to push the wizard here, which will fail if someNumber < 0.1
+       if (someNumber < 0.1)
+           throw new Exception("unlucky");
+       return Ok();
+   }
+   catch (Exception e)
+   {
+       return Err(e, nameof(PutWizard));
+   }
 }
 Wizard morgana = new("Morgana", 42);
 var pushed = PutWizard("good-db", morgana, 1.0);
@@ -542,18 +616,18 @@ Assert(pushed.ErrorMessage.Unwrap().Contains("unlucky"));
 // Res<T> for functions that can fail
 static Res<Wizard> ParseWizardRisky(string str)
 {
-    if (str == null) // apply validation rules manually
-        return Err<Wizard>(errorMessage: "null is passed as wizard str", when: nameof(ParseWizardRisky)); // or just: Err<Wizard>("error message")
+   if (str == null) // apply validation rules manually
+       return Err<Wizard>(errorMessage: "null is passed as wizard str", when: nameof(ParseWizardRisky)); // or just: Err<Wizard>("error message")
 
-    var parts = str.Split('-');             // this should not fail
-    try // use try-catch blocks to create errors from caught exceptions
-    {
-        return Ok(new Wizard(Name: parts[0], NbSpells: int.Parse(parts[1])));
-    }
-    catch (Exception e)
-    {
-        return Err<Wizard>(exception: e, when: nameof(ParseWizardRisky)); // or just: Err<Wizard>(e)
-    }
+   var parts = str.Split('-');             // this should not fail
+   try // use try-catch blocks to create errors from caught exceptions
+   {
+       return Ok(new Wizard(Name: parts[0], NbSpells: int.Parse(parts[1])));
+   }
+   catch (Exception e)
+   {
+       return Err<Wizard>(exception: e, when: nameof(ParseWizardRisky)); // or just: Err<Wizard>(e)
+   }
 }
 var merlin = ParseWizardRisky("Merlin-42");
 Assert(merlin.IsOk);
@@ -566,6 +640,18 @@ Assert(wizardFromNull.ErrorMessage.Unwrap().Contains("null is passed as wizard s
 var wizardFromException = ParseWizardRisky("badwizardinput"); // will throw due to index out of bounds
 Assert(wizardFromException.IsErr);
 Assert(wizardFromException.ErrorMessage.Unwrap().Contains("IndexOutOfRangeException"));
+
+
+// Match
+var okWizard = Ok(new Wizard("Merlin", 42));
+int nbSpells = okWizard.Match(  // match with explicit argument names
+   ok: w => w.NbSpells,
+   err: _errMsg => 0);
+nbSpells = okWizard.Match(w => w.NbSpells, _ => 0); // match with argument order
+nbSpells = okWizard.Match(w => w.NbSpells, 0);  // match with default value for the None case
+Assert(nbSpells == 42);
+int nbSpellsOfErr = Err<Wizard>("magical error").Match(w => w.NbSpells, 0);
+Assert(nbSpellsOfErr == 0);
 
 
 // Map, where Err track is bypassed
@@ -609,10 +695,13 @@ Assert(None<Wizard>().ToRes().IsErr, "ToRes must map None to Err");
 // Res collections
 var errPersons = new List<Res<Wizard>>() { wizardFromException, Err<Wizard>("problem in grabbing wizard") };  // Err, Err
 Assert(errPersons.FirstOrNone().IsNone, "FirstOrNone must return None");
+Assert(errPersons.LastOrNone().IsNone, "LastOrNone must return None");
 Assert(errPersons.UnwrapValues().Any() == false, "UnwrapValues must not yield any");
 
-var resPersons = new Res<Wizard>[] { wizardFromException, new Wizard("Jafar", 42), Err<Wizard>("wrong name"), new Wizard("Albus", 42) };  // Err, Jafar, Err, Albus
+var resPersons = new Res<Wizard>[]
+   { wizardFromException, new Wizard("Jafar", 42), Err<Wizard>("wrong name"), new Wizard("Albus", 42) };  // Err, Jafar, Err, Albus
 Assert(resPersons.FirstOrNone() == new Wizard("Jafar", 42), "FirstOrNone must return Jafar");
+Assert(resPersons.LastOrNone() == new Wizard("Albus", 42), "LastOrNone must return Albus");
 Assert(resPersons.UnwrapValues().Count() == 2, "UnwrapValues must yield two unwrapped value");
 Assert(string.Join(" | ", resPersons.UnwrapValues().Select(p => p.Name)) == "Jafar | Albus");
 ```
