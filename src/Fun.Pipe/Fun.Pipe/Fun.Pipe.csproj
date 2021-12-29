@@ -13,7 +13,7 @@
     <PackageProjectUrl></PackageProjectUrl>
     <RepositoryUrl>https://github.com/mostlyfun/fun-pipe-csharp</RepositoryUrl>
     <RespositoryType>git</RespositoryType>
-    <PackageTags>Pipe, Functional, Chain, Function, Lambda, Delegate, Operator</PackageTags>
+    <PackageTags>Pipe, Chain, Option, Result, Function, Functional, Lambda</PackageTags>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
