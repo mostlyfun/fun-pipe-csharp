@@ -13,13 +13,13 @@ internal static class ExamplePipeHelpers
     }
     internal static void Assert(bool expected)
     {
-        if (!expected)
-            Log(Err($"Assertion failed"));
+        if (expected) return;
+        Err($"Assertion failed").LogIfErr();
     }
     internal static void Assert(bool expected, string errorMessage)
     {
-        if (!expected)
-            Log(Err($"Assertion failed: {errorMessage}"));
+        if (expected) return;
+        Err($"Assertion failed: {errorMessage}").LogIfErr();
     }
 
 

@@ -29,7 +29,7 @@ public static class Extensions
     /// <summary>
     /// Creates Ok result.
     /// </summary>
-    public static Res Ok() => new();
+    public static Res Ok() => new(null);
     /// <summary>
     /// Creates an Err result with the given <paramref name="errorMessage"/>.
     /// </summary>
@@ -113,6 +113,14 @@ public static class Extensions
     public static Res<T> Ok<T>(Opt<T> maybe) => maybe.IsSome ? new(maybe.value) : new($"None->Res", $"Ok<{typeof(T).Name}>");
     static Res<T> Ok<T>(Opt<T> maybe, string when) => maybe.IsSome ? new(maybe.value) : new($"None->Res", when);
 
+
+    // Logical
+    /// <summary>
+    /// Returns back <paramref name="first"/> (this) if it is Some; returns <paramref name="second"/> otherwise.
+    /// </summary>
+    public static Opt<T> Or<T>(this Opt<T> first, Opt<T> second) => first.IsSome ? first : second;
+
+
     // Conversion
     /// <summary>
     /// Converts Res to Opt: maps <paramref name="result"/> to Some of its value when IsOk; to None when IsErr.
@@ -125,7 +133,7 @@ public static class Extensions
     /// <summary>
     /// Converts Res{T} to just Res without the value: Ok(val)->Ok(); Err(msg)-Err(msg).
     /// </summary>
-    public static Res ToRes<T>(this Res<T> result) => result.IsErr ? new(result.ErrorMessage.value) : new();
+    public static Res ToRes<T>(this Res<T> result) => result.IsErr ? new(result.ErrorMessage.value) : new(null);
 
     // Opt - None
     /// <summary>
@@ -171,32 +179,34 @@ public static class Extensions
     /// <summary>
     /// Does nothing and returns itself when <paramref name="result"/> IsOk; throws with the given additional <paramref name="errorMessage"/> when IsErr.
     /// </summary>
-    public static Res ThrowIfErr(this Res result, string errorMessage) { if (result.IsErr) { result.MsgIfErr(errorMessage); throw new ArgumentException(result.ErrorMessage.value); } return result; }
+    public static Res ThrowIfErr(this Res result, string errorMessage) { if (result.IsErr) { result = result.MsgIfErr(errorMessage); throw new ArgumentException(result.ErrorMessage.value); } return result; }
     /// <summary>
     /// Does nothing when <paramref name="result"/> IsOk; logs its <see cref="Res.ErrorMessage"/> when IsErr.
     /// Returns itself.
     /// </summary>
-    public static Res LogIfErr(this Res result) { if (result.IsErr) { Console.WriteLine(result.ErrorMessage.value); } return result; }
+    public static Res LogIfErr(this Res result) { if (result.IsErr) { Console.WriteLine(result); } return result; }
     /// <summary>
     /// Does nothing when <paramref name="result"/> IsOk; logs its <see cref="Res.ErrorMessage"/> with th additional <paramref name="errorMessage"/> when IsErr.
     /// Returns itself.
     /// </summary>
-    public static Res LogIfErr(this Res result, string errorMessage) { if (result.IsErr) { result.MsgIfErr(errorMessage); Console.WriteLine(result.ErrorMessage.value); } return result; }
+    public static Res LogIfErr(this Res result, string errorMessage) { if (result.IsErr) { result = result.MsgIfErr(errorMessage); Console.WriteLine(result); } return result; }
     /// <summary>
     /// Logs the <paramref name="result"/> of the <paramref name="operationName"/>; whether Ok or Err.
     /// </summary>
     public static Res Log(this Res result, string operationName)
     {
         if (result.IsOk)
+        {
             Console.WriteLine($"[ok] {operationName}");
-        else
-            result.LogIfErr(operationName);
-        return result;
+            return result;
+        }
+        return result.LogIfErr($"error while: {operationName}");
+
     }
     /// <summary>
     /// Logs the <paramref name="result"/> of the <paramref name="operationName"/> with timestamp using given <paramref name="timeFormat"/>; whether Ok or Err.
     /// </summary>
-    public static Res LogWithTime(this Res result, string operationName, string timeFormat = "HH-mm-ss")
+    public static Res LogWithTime(this Res result, string operationName, string timeFormat = "HH:mm:ss")
     {
         string strBegin = DateTime.Now.ToString(timeFormat);
         if (result.IsOk)
@@ -220,30 +230,31 @@ public static class Extensions
     /// <summary>
     /// <inheritdoc cref="ThrowIfErr(Res, string)"/>
     /// </summary>
-    public static Res<T> ThrowIfErr<T>(this Res<T> result, string errorMessage) { if (result.IsErr) { result.MsgIfErr(errorMessage); throw new ArgumentException(result.ErrorMessage.value); } return result; }
+    public static Res<T> ThrowIfErr<T>(this Res<T> result, string errorMessage) { if (result.IsErr) { result = result.MsgIfErr(errorMessage); throw new ArgumentException(result.ErrorMessage.value); } return result; }
     /// <summary>
     /// <inheritdoc cref="LogIfErr(Res)"/>
     /// </summary>
-    public static Res<T> LogIfErr<T>(this Res<T> result) { if (result.ErrorMessage.IsSome) { Console.WriteLine(result.ErrorMessage.value); } return result; }
+    public static Res<T> LogIfErr<T>(this Res<T> result) { if (result.ErrorMessage.IsSome) { Console.WriteLine(result); } return result; }
     /// <summary>
     /// <inheritdoc cref="LogIfErr(Res, string)"/>
     /// </summary>
-    public static Res<T> LogIfErr<T>(this Res<T> result, string errorMessage) { if (result.IsErr) { result.MsgIfErr(errorMessage); Console.WriteLine(result.ErrorMessage.value); } return result; }
+    public static Res<T> LogIfErr<T>(this Res<T> result, string errorMessage) { if (result.IsErr) { result = result.MsgIfErr(errorMessage); Console.WriteLine(result); } return result; }
     /// <summary>
     /// Logs the <paramref name="result"/> of the <paramref name="operationName"/>; whether Ok or Err.
     /// </summary>
     public static Res<T> Log<T>(this Res<T> result, string operationName)
     {
         if (result.IsOk)
+        {
             Console.WriteLine($"[ok] {operationName}");
-        else
-            result.LogIfErr(operationName);
-        return result;
+            return result;
+        }
+        return result.LogIfErr($"error while: {operationName}");
     }
     /// <summary>
     /// Logs the <paramref name="result"/> of the <paramref name="operationName"/> with timestamp using given <paramref name="timeFormat"/>; whether Ok or Err.
     /// </summary>
-    public static Res<T> LogWithTime<T>(this Res<T> result, string operationName, string timeFormat = "HH-mm-ss")
+    public static Res<T> LogWithTime<T>(this Res<T> result, string operationName, string timeFormat = "HH:mm:ss")
     {
         string strBegin = DateTime.Now.ToString(timeFormat);
         if (result.IsOk)
@@ -316,7 +327,7 @@ public static class Extensions
     public static Res Try(Action action)
     {
         try { action(); return Ok(); }
-        catch (Exception e) { return new(e); }
+        catch (Exception e) { return new(e, null); }
     }
     /// <summary>
     /// Does nothing and returns back <paramref name="result"/> when already result.IsErr.
@@ -326,7 +337,7 @@ public static class Extensions
     {
         if (result.IsErr) return result;
         try { action(); return Ok(); }
-        catch (Exception e) { return new(e); }
+        catch (Exception e) { return new(e, null); }
     }
     /// <summary>
     /// <inheritdoc cref="Try(Res, Action)"/>
@@ -335,7 +346,7 @@ public static class Extensions
     {
         if (result.IsErr) new Res(result.ErrorMessage.value, null);
         try { action(); return Ok(); }
-        catch (Exception e) { return new(e); }
+        catch (Exception e) { return new(e, null); }
     }
     /// <summary>
     /// Does nothing and returns and returns Err when already <paramref name="maybe"/>.IsNone.
@@ -345,7 +356,7 @@ public static class Extensions
     {
         if (maybe.IsNone) new Res(errNone, null);
         try { action(); return Ok(); }
-        catch (Exception e) { return new(e); }
+        catch (Exception e) { return new(e, null); }
     }
 
     // Try: t->Res
@@ -357,7 +368,7 @@ public static class Extensions
     {
         if (result.IsErr) return new(result.ErrorMessage.value);
         try { action(result.value); return Ok(); }
-        catch (Exception e) { return new(e); }
+        catch (Exception e) { return new(e, null); }
     }
     /// <summary>
     /// Does nothing and returns and returns Err when already <paramref name="maybe"/>.IsNone.
@@ -367,7 +378,7 @@ public static class Extensions
     {
         if (maybe.IsNone) return new(errNone);
         try { action(maybe.value); return Ok(); }
-        catch (Exception e) { return new(e); }
+        catch (Exception e) { return new(e, null); }
     }
 
     // Map: ()->T
@@ -557,7 +568,7 @@ public static class Extensions
     {
         if (result.IsErr) return result;
         try { return map(); }
-        catch (Exception e) { return new(e); }
+        catch (Exception e) { return new(e, null); }
     }
     // TryMap: Res->Res<T>
     /// <summary>
@@ -755,7 +766,7 @@ public static class Extensions
     public static async Task<Res> TryAsync(Func<Task> action)
     {
         try { await action(); return new(); }
-        catch (Exception e) { return new(e); }
+        catch (Exception e) { return new(e, null); }
     }
     /// <summary>
     /// <inheritdoc cref="Try(Res, Action)"/>
@@ -764,7 +775,7 @@ public static class Extensions
     {
         if (result.IsErr) return result;
         try { await action(); return new(); }
-        catch (Exception e) { return new(e); }
+        catch (Exception e) { return new(e, null); }
     }
     /// <summary>
     /// <inheritdoc cref="Try{T}(Res{T}, Action)"/>
@@ -773,7 +784,7 @@ public static class Extensions
     {
         if (result.IsErr) return new(result.ErrorMessage.value);
         try { await action(); return new(); }
-        catch (Exception e) { return new(e); }
+        catch (Exception e) { return new(e, null); }
     }
     /// <summary>
     /// <inheritdoc cref="Try{T}(Opt{T}, Action)"/>
@@ -782,7 +793,7 @@ public static class Extensions
     {
         if (maybe.IsNone) return new(errNone);
         try { await action(); return new(); }
-        catch (Exception e) { return new(e); }
+        catch (Exception e) { return new(e, null); }
     }
 
     // Try: t->Res
@@ -793,7 +804,7 @@ public static class Extensions
     {
         if (result.IsErr) return new(result.ErrorMessage.value);
         try { await action(result.value); return new(); }
-        catch (Exception e) { return new(e); }
+        catch (Exception e) { return new(e, null); }
     }
     /// <summary>
     /// <inheritdoc cref="Try{T}(Opt{T}, Action{T})"/>
@@ -802,7 +813,7 @@ public static class Extensions
     {
         if (maybe.IsNone) return new(errNone);
         try { await action(maybe.value); return new(); }
-        catch (Exception e) { return new(e); }
+        catch (Exception e) { return new(e, null); }
     }
 
     // Map: ()->T

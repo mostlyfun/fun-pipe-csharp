@@ -56,7 +56,7 @@ public static class ExampleRes
         divider = 0;
         var resOneOverZero = TryMap(() => 1 / divider);
         Assert(resOneOverZero.IsErr);
-        Assert(resOneOverZero.ErrorMessage.IsSome && resOneOverZero.ErrorMessage.Unwrap().Contains("[exc] DivideByZeroException: Attempted to divide by zero."));
+        Assert(resOneOverZero.ErrorMessage.IsSome && resOneOverZero.ErrorMessage.Unwrap().Contains("DivideByZeroException: Attempted to divide by zero."));
 
         // null-free
         var nullString = Ok<string>(null);

@@ -1,5 +1,7 @@
 using System;
 using System.Text;
+using System.Text.RegularExpressions;
+
 namespace Fun;
 
 /// <summary>
@@ -30,9 +32,10 @@ public readonly struct Res
     /// Parameterless ctor returns Ok; use 'Fun.Extensions.Ok' or `Fun.Extensions.Err` to construct options.
     /// Better to add `using static Fun.Extensions` and use `Ok` and `Err` directly.
     /// </summary>
-    public Res() => errorMessage = null;
-    internal Res(string errorMessage, string when = null) => this.errorMessage = GetErrorMessage(errorMessage, when);
-    internal Res(Exception exception, string when = null) => this.errorMessage = GetExceptionMessage(exception, when);
+    public Res() => errorMessage = "constructed with Res(); rather than Ok() or Err(...)";
+    internal Res(string errorMessage) => this.errorMessage = errorMessage;
+    internal Res(string errorMessage, string when) => this.errorMessage = GetErrorMessage(errorMessage, when);
+    internal Res(Exception exception, string when) => this.errorMessage = GetExceptionMessage(exception, when);
 
 
     // Method
@@ -45,7 +48,7 @@ public readonly struct Res
     {
         if (this.errorMessage == null)
             return this;
-        string msg = this.errorMessage + Environment.NewLine + Res.GetErrorMessage(errorMessage, null);
+        string msg = this.errorMessage + Environment.NewLine + ": " + Res.GetErrorMessage(errorMessage, null);
         return new(msg, null);
     }
     /// <summary>
@@ -57,7 +60,7 @@ public readonly struct Res
     {
         if (this.errorMessage == null)
             return this;
-        string msg = this.errorMessage + Environment.NewLine + Res.GetErrorMessage(errorMessage, when);
+        string msg = this.errorMessage + Environment.NewLine + ": " + Res.GetErrorMessage(errorMessage, when);
         return new(msg, null);
     }
 
@@ -90,6 +93,7 @@ public readonly struct Res
 
 
     // Method Helper
+    const string patternStackTrace = @"( at )|( in )|(:line )";
     internal static string GetErrorMessage(string errorMessage, string when)
     {
         if (errorMessage == null)
@@ -99,20 +103,31 @@ public readonly struct Res
     internal static string GetExceptionMessage(Exception exception, string when)
     {
         var sb = new StringBuilder();
-        if (when != null)
-            sb.Append("[exc@").Append(when).Append("] ");
-        else
-            sb.Append("[exc] ");
-        AppendException(sb, exception);
-        var inner = exception.InnerException;
-        while (inner != null)
+
+        sb.Append("Exception. ");
+        if (when != null) sb.Append(when);
+        sb.AppendLine();
+
+        sb.Append("  ! ").Append(exception.GetType().Name).Append(": ").AppendLine(exception.Message);
+        var exc = exception.InnerException;
+        while (exc != null)
         {
-            sb.Append('\n');
-            AppendException(sb, inner);
-            inner = inner.InnerException;
+            sb.Append("  ! ").Append(exc.GetType().Name).Append(": ").AppendLine(exc.Message);
+            exc = exc.InnerException;
+        }
+
+        if (exception.StackTrace != null)
+        {
+            var stack = exception.StackTrace.Split(Environment.NewLine);
+            foreach (var line in stack)
+            {
+                var parts = Regex.Split(line, patternStackTrace);
+                if (parts.Length < 7) { sb.Append("    -> ").AppendLine(line.Trim()); continue; }
+                int indLastSlash = parts[4].LastIndexOf('\\');
+                string file = indLastSlash < 1 ? parts[4] : parts[4].Substring(indLastSlash + 1);
+                sb.Append("    -> ").Append(parts[2]).Append(" | ").AppendLine(parts[6]);
+            }
         }
         return sb.ToString();
     }
-    static void AppendException(StringBuilder sb, Exception exception)
-        => sb.Append(exception.GetType().Name).Append(": ").Append(exception.Message);
 }

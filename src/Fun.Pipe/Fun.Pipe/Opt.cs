@@ -16,12 +16,12 @@ public readonly struct Opt<T>
     /// <summary>
     /// True if the option is None.
     /// </summary>
-    public readonly bool IsNone;
+    public bool IsNone => !IsSome;
     // Propcd 
     /// <summary>
     /// True if the option is Some value, which can be obtained by <see cref="Unwrap()"/> or <see cref="Unwrap(T)"/>.
     /// </summary>
-    public bool IsSome => !IsNone;
+    public readonly bool IsSome;
 
 
     // Ctor
@@ -31,18 +31,18 @@ public readonly struct Opt<T>
         {
             if (value == null)
             {
-                IsNone = true;
+                IsSome = false;
                 this.value = default;
             }
             else
             {
-                IsNone = false;
+                IsSome = true;
                 this.value = value;
             }
         }
         else
         {
-            IsNone = false;
+            IsSome = true;
             this.value = value;
         }
     }
@@ -53,7 +53,7 @@ public readonly struct Opt<T>
     /// </summary>
     public Opt()
     {
-        IsNone = true;
+        IsSome = false;
         value = default;
     }
     /// <summary>

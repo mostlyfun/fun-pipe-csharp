@@ -1,7 +1,4 @@
 using System;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Text;
 
 namespace Fun;
 
@@ -38,7 +35,7 @@ public readonly struct Res<T>
     /// </summary>
     public Res()
     {
-        errorMessage = "not-initialized";
+        errorMessage = "constructed with Res<T>(); rather than Ok(value) or Err(...)";
         value = default;
     }
     internal Res(T value)
@@ -100,7 +97,7 @@ public readonly struct Res<T>
     {
         if (this.errorMessage == null)
             return this;
-        string msg = this.errorMessage + Environment.NewLine + Res.GetErrorMessage(errorMessage, null);
+        string msg = this.errorMessage + Environment.NewLine + ": " + Res.GetErrorMessage(errorMessage, null);
         return new(msg, null);
     }
     /// <summary>
@@ -110,7 +107,7 @@ public readonly struct Res<T>
     {
         if (this.errorMessage == null)
             return this;
-        string msg = this.errorMessage + Environment.NewLine + Res.GetErrorMessage(errorMessage, when);
+        string msg = this.errorMessage + Environment.NewLine + ": " + Res.GetErrorMessage(errorMessage, when);
         return new(msg, null);
     }
 

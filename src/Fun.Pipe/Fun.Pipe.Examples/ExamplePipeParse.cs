@@ -61,8 +61,8 @@ public static class ExamplePipeParse
         Log($"\n\n\n--- {nameof(ExamplePipeParse)} ---");
         double flip = new Random().NextDouble();
         string resultMustBe = "result-must-be: " + (GetFilepathFromUser(flip).IsNone ? "filepath-not-provided" : GetFilepathFromUser(flip).Unwrap());
-        bool mustThrow = flip < 0.25;
-        Log($"flipped: {flip}\n{resultMustBe}\nwill-throw: {mustThrow}");
+        bool willFail = flip < 0.75;
+        Log($"flipped: {flip}\n{resultMustBe}\nwill-fail: {willFail}");
 
         RunExample("Imperative", () =>
         {
