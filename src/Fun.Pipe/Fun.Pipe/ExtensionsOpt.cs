@@ -15,6 +15,7 @@ public static partial class Extensions
     // Constants
     const string errNone = "None->Res";
 
+
     // New
     /// <summary>
     /// Creates Some of <typeparamref name="T"/> with the given <paramref name="value"/>.
@@ -39,11 +40,11 @@ public static partial class Extensions
     /// <summary>
     /// Creates None of <typeparamref name="T"/>, regardless of what <paramref name="maybe"/> is.
     /// </summary>
-    public static Opt<T> None<T>(Opt<T> maybe) => new Opt<T>();
+    public static Opt<T> None<T>(Opt<T> maybe) => new();
     /// <summary>
     /// Creates None of <typeparamref name="T"/>, regardless of what <paramref name="maybe"/> is.
     /// </summary>
-    public static Opt<T> None<T>(Res<T> maybe) => new Opt<T>();
+    public static Opt<T> None<T>(Res<T> maybe) => new();
 
 
     // Logical
@@ -137,6 +138,7 @@ public static partial class Extensions
     /// <inheritdoc cref="Map{TOut}(Func{TOut})"/>
     /// </summary>
     public static Task<TOut> MapAsync<TOut>(Func<Task<TOut>> map) => map();
+
 
     // Map: t->T
     /// <summary>
@@ -248,6 +250,7 @@ public static partial class Extensions
     /// </summary>
     public static Opt<TimeOnly> ParseTimeOnlyOrNone(this ReadOnlySpan<char> text) { bool s = TimeOnly.TryParse(text, out var val); return s ? Some(val) : None<TimeOnly>(); }
 
+
     // TryGetValue
     /// <summary>
     /// Returns Some of value from <paramref name="dictionary"/> with the given <paramref name="key"/> if exists; None if the key is absent.
@@ -257,6 +260,7 @@ public static partial class Extensions
     /// Returns Some of value from <paramref name="dictionary"/> with the given <paramref name="key"/> if exists; None if the key is absent.
     /// </summary>
     public static Opt<TValue> GetValueOrNone<TKey, TValue>(this ConcurrentDictionary<TKey, TValue> dictionary, TKey key) { bool s = dictionary.TryGetValue(key, out var val); return s ? Some(val) : None<TValue>(); }
+
 
     // Collections
     /// <summary>
@@ -310,6 +314,8 @@ public static partial class Extensions
     /// Opt counterpart of LastOrDefault over results collection, which returns the last Ok element of <paramref name="enumerable"/> if any, None otherwise.
     /// </summary>
     public static Opt<T> LastOrNone<T>(this IEnumerable<Res<T>> enumerable) => FirstOrNone(enumerable.Reverse());
+    
+    
     // Collections - Elevate
     /// <summary>
     /// Converts <paramref name="list"/> of <typeparamref name="T"/> into a list of Opt&lt;<typeparamref name="T"/>>.
@@ -405,6 +411,7 @@ public static partial class Extensions
             opt.Add(item.Key, Some(item.Value));
         return opt;
     }
+
 
     // Validation
     /// <summary>

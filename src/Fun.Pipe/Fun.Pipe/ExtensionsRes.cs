@@ -393,6 +393,7 @@ public static partial class Extensions
         catch (Exception e) { return new Res<TOut>(e, null); }
     }
 
+
     // TryMap: t->Res<T>
     /// <summary>
     /// Tries to return Ok(<paramref name="map"/>()); returns Err if the method throws.
@@ -455,6 +456,8 @@ public static partial class Extensions
         try { return map(); }
         catch (Exception e) { return new(e, null); }
     }
+    
+    
     // TryMap: Res->Res<T>
     /// <summary>
     /// Returns Err of <typeref name="TOut"/> when <paramref name="result"/> IsErr.
@@ -487,6 +490,8 @@ public static partial class Extensions
         try { return ToRes(map()); }
         catch (Exception e) { return new Res<TOut>(e, null); }
     }
+    
+    
     // TryMap: Res<t>->Res<T>
     /// <summary>
     /// Returns Err of <typeref name="TOut"/> when <paramref name="result"/> IsErr.
@@ -551,6 +556,7 @@ public static partial class Extensions
         catch (Exception e) { return new Res<TOut>(e, null); }
     }
 
+    
     // TryMap: Opt<t>->Res<T>
     /// <summary>
     /// Returns Err of <typeref name="TOut"/> when <paramref name="maybe"/> IsNone.
@@ -666,6 +672,7 @@ public static partial class Extensions
         catch (Exception e) { return new(e, null); }
     }
 
+
     // Try: t->Res
     /// <summary>
     /// <inheritdoc cref="Try{T}(Opt{T}, Action{T})"/>
@@ -756,6 +763,7 @@ public static partial class Extensions
     /// </summary>
     public static Task<Res<TOut>> MapAsync<T, TOut>(this Opt<T> maybe, Func<T, Task<Res<TOut>>> map) => maybe.IsNone ? Task.FromResult(new Res<TOut>("None->Res", "Map")) : map(maybe.value);
 
+
     // TryMap: ()->Res<T>
     /// <summary>
     /// <inheritdoc cref="TryMap{TOut}(Func{TOut})"/>
@@ -781,6 +789,7 @@ public static partial class Extensions
         try { return (await map()).ToRes(); }
         catch (Exception e) { return new(e, null); }
     }
+
 
     // TryMap: t->Res<T>
     /// <summary>
@@ -842,6 +851,8 @@ public static partial class Extensions
         try { return await map(); }
         catch (Exception e) { return new(e, null); }
     }
+    
+    
     // TryMap: Res->Res<T>
     /// <summary>
     /// <inheritdoc cref="TryMap{TOut}(Res, Func{TOut})"/>
@@ -870,6 +881,7 @@ public static partial class Extensions
         try { return ToRes(await map()); }
         catch (Exception e) { return new(e, null); }
     }
+
 
     // TryMap: Res<t>->Res<T>
     /// <summary>
@@ -986,6 +998,7 @@ public static partial class Extensions
 
     #endregion
     
+
     // Validation
     /// <summary>
     /// Returns Ok(<paramref name="value"/>) if <paramref name="validator"/>(<paramref name="value"/>) returns true; Err(<paramref name="errorMessage"/>) otherwise.
