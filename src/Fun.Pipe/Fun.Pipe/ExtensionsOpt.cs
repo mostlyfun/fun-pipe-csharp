@@ -28,25 +28,6 @@ public static partial class Extensions
     public static Opt<T> None<T>() => new();
 
 
-    // New - Guard
-    /// <summary>
-    /// Nested options are not useful; hence, just returns back <paramref name="maybe"/>.
-    /// </summary>
-    public static Opt<T> Some<T>(Opt<T> maybe) => maybe;
-    /// <summary>
-    /// Nested options and results are not useful; maps <paramref name="result"/>'s value to Some when IsOk, to None when IsErr.
-    /// </summary>
-    public static Opt<T> Some<T>(Res<T> result) => result.IsOk ? new(result.value) : new();
-    /// <summary>
-    /// Creates None of <typeparamref name="T"/>, regardless of what <paramref name="maybe"/> is.
-    /// </summary>
-    public static Opt<T> None<T>(Opt<T> maybe) => new();
-    /// <summary>
-    /// Creates None of <typeparamref name="T"/>, regardless of what <paramref name="maybe"/> is.
-    /// </summary>
-    public static Opt<T> None<T>(Res<T> maybe) => new();
-
-
     // Logical
     /// <summary>
     /// Returns back <paramref name="first"/> (this) if it is Some; returns <paramref name="second"/> otherwise.
