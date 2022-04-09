@@ -16,107 +16,115 @@ public static partial class Extensions
     /// <summary>
     /// Creates Ok result.
     /// </summary>
-    public static Res Ok() => new(null);
+    public static Res Ok()
+        => new(null);
     /// <summary>
     /// Creates an Err result with the given <paramref name="errorMessage"/>.
     /// </summary>
-    public static Res Err(string errorMessage) => new(errorMessage, null);
+    public static Res Err(string errorMessage)
+        => new(errorMessage, null);
     /// <summary>
     /// Creates an Err result occured during <paramref name="when"/> with the given <paramref name="errorMessage"/>.
     /// </summary>
-    public static Res Err(string errorMessage, string when) => new(errorMessage, when);
+    public static Res Err(string errorMessage, string when)
+        => new(errorMessage, when);
     /// <summary>
     /// Creates an Err result with the given <paramref name="exception"/>.
     /// </summary>
-    public static Res Err(Exception exception) => new(exception, null);
+    public static Res Err(Exception exception)
+        => new(exception, null);
     /// <summary>
     /// Creates an Err result occured during <paramref name="when"/> with the given <paramref name="exception"/>.
     /// </summary>
-    public static Res Err(Exception exception, string when) => new(exception, when);
+    public static Res Err(Exception exception, string when)
+        => new(exception, when);
     /// <summary>
     /// Creates Ok of <typeparamref name="T"/> with the given <paramref name="value"/>.
     /// Note that 'null' is not allowed and automatically mapped to Err.
     /// </summary>
-    public static Res<T> Ok<T>(T value) => new(value);
+    public static Res<T> Ok<T>(T value)
+        => new(value);
     /// <summary>
     /// Creates an Err result with the given <paramref name="errorMessage"/>.
     /// </summary>
-    public static Res<T> Err<T>(string errorMessage) => new(errorMessage, null);
+    public static Res<T> Err<T>(string errorMessage)
+        => new(errorMessage, null);
     /// <summary>
     /// Creates an Err result occured during <paramref name="when"/> with the given <paramref name="errorMessage"/>.
     /// </summary>
-    public static Res<T> Err<T>(string errorMessage, string when) => new(errorMessage, when);
+    public static Res<T> Err<T>(string errorMessage, string when)
+        => new(errorMessage, when);
     /// <summary>
     /// Creates an Err result with the given <paramref name="exception"/>.
     /// </summary>
-    public static Res<T> Err<T>(Exception exception) => new(exception, null);
+    public static Res<T> Err<T>(Exception exception)
+        => new(exception, null);
     /// <summary>
     /// Creates an Err result occured during <paramref name="when"/> with the given <paramref name="exception"/>.
     /// </summary>
-    public static Res<T> Err<T>(Exception exception, string when) => new(exception, when);
+    public static Res<T> Err<T>(Exception exception, string when)
+        => new(exception, when);
 
 
     // New - ResFromStatus
     /// <summary>
     /// Creates a result: Ok if <paramref name="successCondition"/> is true; Err with the given <paramref name="failureMessage"/> if false.
     /// </summary>
-    public static Res ResFromStatus(bool successCondition, string failureMessage) => successCondition ? new() : new(failureMessage, null);
+    public static Res ResFromStatus(bool successCondition, string failureMessage)
+        => successCondition ? new() : new(failureMessage, null);
     /// <summary>
     /// Creates a result: Ok if <paramref name="httpStatusCode"/> is 200-OK; Err with the given <paramref name="failureMessage"/> otherwise.
     /// </summary>
-    public static Res ResFromStatus(HttpStatusCode httpStatusCode, string failureMessage) => httpStatusCode == HttpStatusCode.OK ? new() : new(failureMessage, null);
+    public static Res ResFromStatus(HttpStatusCode httpStatusCode, string failureMessage)
+        => httpStatusCode == HttpStatusCode.OK ? new() : new(failureMessage, null);
     /// <summary>
     /// Returns Ok(<paramref name="response"/>) if response.StatusCode is 200-OK; Err with the given <paramref name="failureMessage"/> otherwise.
     /// </summary>
-    public static Res<HttpResponseMessage> ResFromStatus(this HttpResponseMessage response, string failureMessage) => response.StatusCode == HttpStatusCode.OK ? Ok(response) : new($"[StatusCode: {response.StatusCode}] {failureMessage}", null);
+    public static Res<HttpResponseMessage> ResFromStatus(this HttpResponseMessage response, string failureMessage)
+        => response.StatusCode == HttpStatusCode.OK ? Ok(response) : new($"[StatusCode: {response.StatusCode}] {failureMessage}", null);
     /// <summary>
     /// Returns back <paramref name="result"/> if result.IsOk and StatusCode of the HttpResponseMessage is 200-OK; Err with the given <paramref name="failureMessage"/> otherwise.
     /// </summary>
-    public static Res<HttpResponseMessage> ResFromStatus(this Res<HttpResponseMessage> result, string failureMessage) => result.IsErr ? new(result.ErrorMessage.value, null) : ResFromStatus(result.value, failureMessage);
-
-
-    // New - Guard
-    /// <summary>
-    /// Nested results are not useful; hence, just returns back <paramref name="result"/>.
-    /// </summary>
-    public static Res<T> Ok<T>(Res<T> result) => result;
-    /// <summary>
-    /// Nested options and results are not useful; maps <paramref name="maybe"/>'s value to Ok when IsSome, to Err when IsNone.
-    /// </summary>
-    public static Res<T> Ok<T>(Opt<T> maybe) => maybe.IsSome ? new(maybe.value) : new($"None->Res", $"Ok<{typeof(T).Name}>");
-    static Res<T> Ok<T>(Opt<T> maybe, string when) => maybe.IsSome ? new(maybe.value) : new($"None->Res", when);
+    public static Res<HttpResponseMessage> ResFromStatus(this Res<HttpResponseMessage> result, string failureMessage)
+        => result.IsErr ? new(result.ErrorMessage.value, null) : ResFromStatus(result.value, failureMessage);
 
 
     // Conversion
     /// <summary>
     /// Converts Opt to Res: maps <paramref name="maybe"/> to Ok of its value when IsSome; to Err when IsNone.
     /// </summary>
-    public static Res<T> ToRes<T>(this Opt<T> maybe) => maybe.IsNone ? Err<T>("None->Res", $"ToRes<{typeof(T).Name}>") : Ok(maybe.value);
+    public static Res<T> ToRes<T>(this Opt<T> maybe)
+        => maybe.IsNone ? Err<T>("None->Res", $"ToRes<{typeof(T).Name}>") : Ok(maybe.value);
     /// <summary>
     /// Converts Res{T} to just Res without the value: Ok(val)->Ok(); Err(msg)-Err(msg).
     /// </summary>
-    public static Res ToRes<T>(this Res<T> result) => result.IsErr ? new(result.ErrorMessage.value) : new(null);
+    public static Res ToRes<T>(this Res<T> result)
+        => result.IsErr ? new(result.ErrorMessage.value) : new(null);
 
 
     // Res - Err
     /// <summary>
     /// Does nothing and returns itself when <paramref name="result"/> IsOk; throws when IsErr.
     /// </summary>
-    public static Res ThrowIfErr(this Res result) { if (result.IsErr) throw new ArgumentException(result.ErrorMessage.value); return result; }
+    public static Res ThrowIfErr(this Res result)
+    { if (result.IsErr) throw new ArgumentException(result.ErrorMessage.value); return result; }
     /// <summary>
     /// Does nothing and returns itself when <paramref name="result"/> IsOk; throws with the given additional <paramref name="errorMessage"/> when IsErr.
     /// </summary>
-    public static Res ThrowIfErr(this Res result, string errorMessage) { if (result.IsErr) { result = result.MsgIfErr(errorMessage); throw new ArgumentException(result.ErrorMessage.value); } return result; }
+    public static Res ThrowIfErr(this Res result, string errorMessage)
+    { if (result.IsErr) { result = result.MsgIfErr(errorMessage); throw new ArgumentException(result.ErrorMessage.value); } return result; }
     /// <summary>
     /// Does nothing when <paramref name="result"/> IsOk; logs its <see cref="Res.ErrorMessage"/> when IsErr.
     /// Returns itself.
     /// </summary>
-    public static Res LogIfErr(this Res result) { if (result.IsErr) { Console.WriteLine(result); } return result; }
+    public static Res LogIfErr(this Res result)
+    { if (result.IsErr) { Console.WriteLine(result); } return result; }
     /// <summary>
     /// Does nothing when <paramref name="result"/> IsOk; logs its <see cref="Res.ErrorMessage"/> with th additional <paramref name="errorMessage"/> when IsErr.
     /// Returns itself.
     /// </summary>
-    public static Res LogIfErr(this Res result, string errorMessage) { if (result.IsErr) { result = result.MsgIfErr(errorMessage); Console.WriteLine(result); } return result; }
+    public static Res LogIfErr(this Res result, string errorMessage)
+    { if (result.IsErr) { result = result.MsgIfErr(errorMessage); Console.WriteLine(result); } return result; }
     /// <summary>
     /// Logs the <paramref name="result"/> of the <paramref name="operationName"/>; whether Ok or Err.
     /// </summary>
@@ -149,11 +157,13 @@ public static partial class Extensions
     /// Does nothing when <paramref name="result"/> IsOk; runs the given <paramref name="action"/> when IsErr.
     /// Returns itself.
     /// </summary>
-    public static Res RunIfErr(this Res result, Action action) { if (result.IsErr) action(); return result; }
+    public static Res RunIfErr(this Res result, Action action)
+    { if (result.IsErr) action(); return result; }
     /// <summary>
     /// <inheritdoc cref="ThrowIfErr(Res)"/>
     /// </summary>
-    public static Res<T> ThrowIfErr<T>(this Res<T> result) { if (result.IsErr) throw new ArgumentException(result.ErrorMessage.value); return result; }
+    public static Res<T> ThrowIfErr<T>(this Res<T> result)
+    { if (result.IsErr) throw new ArgumentException(result.ErrorMessage.value); return result; }
     /// <summary>
     /// <inheritdoc cref="ThrowIfErr(Res, string)"/>
     /// </summary>
@@ -161,11 +171,13 @@ public static partial class Extensions
     /// <summary>
     /// <inheritdoc cref="LogIfErr(Res)"/>
     /// </summary>
-    public static Res<T> LogIfErr<T>(this Res<T> result) { if (result.ErrorMessage.IsSome) { Console.WriteLine(result); } return result; }
+    public static Res<T> LogIfErr<T>(this Res<T> result)
+    { if (result.ErrorMessage.IsSome) { Console.WriteLine(result); } return result; }
     /// <summary>
     /// <inheritdoc cref="LogIfErr(Res, string)"/>
     /// </summary>
-    public static Res<T> LogIfErr<T>(this Res<T> result, string errorMessage) { if (result.IsErr) { result = result.MsgIfErr(errorMessage); Console.WriteLine(result); } return result; }
+    public static Res<T> LogIfErr<T>(this Res<T> result, string errorMessage)
+    { if (result.IsErr) { result = result.MsgIfErr(errorMessage); Console.WriteLine(result); } return result; }
     /// <summary>
     /// Logs the <paramref name="result"/> of the <paramref name="operationName"/>; whether Ok or Err.
     /// </summary>
@@ -196,7 +208,8 @@ public static partial class Extensions
     /// <summary>
     /// <inheritdoc cref="RunIfErr(Res, Action)"/>
     /// </summary>
-    public static Res<T> RunIfErr<T>(this Res<T> result, Action action) { if (result.IsErr) action(); return result; }
+    public static Res<T> RunIfErr<T>(this Res<T> result, Action action)
+    { if (result.IsErr) action(); return result; }
     /// <summary>
     /// Maps <paramref name="result"/> into <paramref name="ok"/>(maybe.Unwrap()) whenever maybe.IsSome; and into <paramref name="err"/>(maybe.ErrorMessage.Unwrap()) otherwise.
     /// </summary>
@@ -219,15 +232,18 @@ public static partial class Extensions
     /// <summary>
     /// Runs <paramref name="action"/>() only if result.IsOk, and returns back <paramref name="result"/>.
     /// </summary>
-    public static Res Run(this Res result, Action action) { if (result.IsOk) action(); return result; }
+    public static Res Run(this Res result, Action action)
+    { if (result.IsOk) action(); return result; }
     /// <summary>
     /// <inheritdoc cref="Run(Res, Action)"/>
     /// </summary>
-    public static Res<T> Run<T>(this Res<T> result, Action action) { if (result.IsOk) action(); return result; }
+    public static Res<T> Run<T>(this Res<T> result, Action action)
+    { if (result.IsOk) action(); return result; }
     /// <summary>
     /// Runs <paramref name="action"/>(<paramref name="result"/>.Unwrap()) only if result.IsOk, and returns back <paramref name="result"/>.
     /// </summary>
-    public static Res<T> Run<T>(this Res<T> result, Action<T> action) { if (result.IsOk) action(result.value); return result; }
+    public static Res<T> Run<T>(this Res<T> result, Action<T> action)
+    { if (result.IsOk) action(result.value); return result; }
 
 
     // Try: ()->Res
@@ -298,73 +314,70 @@ public static partial class Extensions
     /// <summary>
     /// Returns back <paramref name="result"/> when IsErr; returns <paramref name="map"/>() when IsOk.
     /// </summary>
-    public static Res Map(this Res result, Func<Res> map) => result.IsErr ? result : map();
+    public static Res Map(this Res result, Func<Res> map)
+        => result.IsErr ? result : map();
     
     
     // Map: Res->Res<T>
     /// <summary>
     /// Returns back <paramref name="result"/> of <typeref name="TOut"/> when IsErr; returns Ok(<paramref name="map"/>()) when IsOk.
     /// </summary>
-    public static Res<TOut> Map<TOut>(this Res result, Func<TOut> map) => result.IsErr ? new(result.ErrorMessage.value, null) : Ok(map());
+    public static Res<TOut> Map<TOut>(this Res result, Func<TOut> map)
+        => result.IsErr ? new(result.ErrorMessage.value, null) : Ok(map());
     /// <summary>
     /// Returns back <paramref name="result"/> of <typeparam name="TOut"/> when IsErr; returns <paramref name="map"/>() when IsOk.
     /// </summary>
-    public static Res<TOut> Map<TOut>(this Res result, Func<Res<TOut>> map) => result.IsErr ? new(result.ErrorMessage.value, null) : map();
-    /// <summary>
-    /// Returns back <paramref name="result"/> of <typeparam name="TOut"/> when IsErr; returns <paramref name="map"/>().ToRes() when IsOk.
-    /// </summary>
-    public static Res<TOut> Map<TOut>(this Res result, Func<Opt<TOut>> map) => result.IsErr ? new(result.ErrorMessage.value, null) : Ok(map());
+    public static Res<TOut> Map<TOut>(this Res result, Func<Res<TOut>> map)
+        => result.IsErr ? new(result.ErrorMessage.value, null) : map();
 
     
     // Map: Res<t>->Res
     /// <summary>
     /// <inheritdoc cref="Map(Res, Func{Res})"/>
     /// </summary>
-    public static Res Map<T>(this Res<T> result, Func<Res> map) => result.IsErr ? new(result.ErrorMessage.value, null) : map();
+    public static Res Map<T>(this Res<T> result, Func<Res> map)
+        => result.IsErr ? new(result.ErrorMessage.value, null) : map();
     /// <summary>
     /// Returns back <paramref name="result"/> when IsErr; returns <paramref name="map"/>(result.Unwrap()) when IsOk.
     /// </summary>
-    public static Res Map<T>(this Res<T> result, Func<T, Res> map) => result.IsErr ? new(result.ErrorMessage.value, null) : map(result.value);
+    public static Res Map<T>(this Res<T> result, Func<T, Res> map)
+        => result.IsErr ? new(result.ErrorMessage.value, null) : map(result.value);
     
     
     // Map: Res<t>->Res<T>
     /// <summary>
     /// Returns back <paramref name="result"/> of <typeparamref name="TOut"/> when IsErr; returns Ok(<paramref name="map"/>()) when IsOk.
     /// </summary>
-    public static Res<TOut> Map<T, TOut>(this Res<T> result, Func<TOut> map) => result.IsErr ? new(result.ErrorMessage.value, null) : Ok(map());
+    public static Res<TOut> Map<T, TOut>(this Res<T> result, Func<TOut> map)
+        => result.IsErr ? new(result.ErrorMessage.value, null) : Ok(map());
     /// <summary>
     /// Returns back <paramref name="result"/> of <typeparamref name="TOut"/> when IsErr; returns Ok(<paramref name="map"/>(result.Unwrap())) when IsOk.
     /// </summary>
-    public static Res<TOut> Map<T, TOut>(this Res<T> result, Func<T, TOut> map) => result.IsErr ? new(result.ErrorMessage.value, null) : Ok(map(result.value));
+    public static Res<TOut> Map<T, TOut>(this Res<T> result, Func<T, TOut> map)
+        => result.IsErr ? new(result.ErrorMessage.value, null) : Ok(map(result.value));
     /// <summary>
     /// Returns back <paramref name="result"/> of <typeparamref name="TOut"/> when IsErr; returns <paramref name="map"/>() when IsOk.
     /// </summary>
-    public static Res<TOut> Map<T, TOut>(this Res<T> result, Func<Res<TOut>> map) => result.IsErr ? new(result.ErrorMessage.value, null) : map();
+    public static Res<TOut> Map<T, TOut>(this Res<T> result, Func<Res<TOut>> map)
+        => result.IsErr ? new(result.ErrorMessage.value, null) : map();
     /// <summary>
     /// Returns back <paramref name="result"/> of <typeparamref name="TOut"/> when IsErr; returns <paramref name="map"/>(result.Unwrap()) when IsOk.
     /// </summary>
-    public static Res<TOut> Map<T, TOut>(this Res<T> result, Func<T, Res<TOut>> map) => result.IsErr ? new(result.ErrorMessage.value, null) : map(result.value);
-    /// <summary>
-    /// Returns back <paramref name="result"/> of <typeparamref name="TOut"/> when IsErr; returns <paramref name="map"/>().ToRes() when IsOk.
-    /// Note that Opt->Res mapping is as follows: Some(value)->Ok(value); None->Err.
-    /// </summary>
-    public static Res<TOut> Map<T, TOut>(this Res<T> result, Func<Opt<TOut>> map) => result.IsErr ? new(result.ErrorMessage.value, null) : Ok(map());
-    /// <summary>
-    /// Returns back <paramref name="result"/> of <typeparamref name="TOut"/> when IsErr; returns <paramref name="map"/>(result.Unwrap()).ToRes() when IsOk.
-    /// Note that Opt->Res mapping is as follows: Some(value)->Ok(value); None->Err.
-    /// </summary>
-    public static Res<TOut> Map<T, TOut>(this Res<T> result, Func<T, Opt<TOut>> map) => result.IsErr ? new(result.ErrorMessage.value, null) : Ok(map(result.value));
+    public static Res<TOut> Map<T, TOut>(this Res<T> result, Func<T, Res<TOut>> map)
+        => result.IsErr ? new(result.ErrorMessage.value, null) : map(result.value);
 
 
     // Map: Opt<t>->Res<T>
     /// <summary>
     /// Returns Err when <paramref name="maybe"/> IsNone; <paramref name="map"/>() when IsSome.
     /// </summary>
-    public static Res<TOut> Map<T, TOut>(this Opt<T> maybe, Func<Res<TOut>> map) => maybe.IsNone ? new(errNone, null) : map();
+    public static Res<TOut> Map<T, TOut>(this Opt<T> maybe, Func<Res<TOut>> map)
+        => maybe.IsNone ? new(errNone, null) : map();
     /// <summary>
     /// Returns Err when <paramref name="maybe"/> IsNone; <paramref name="map"/>(maybe.Unwrap()) when IsSome.
     /// </summary>
-    public static Res<TOut> Map<T, TOut>(this Opt<T> maybe, Func<T, Res<TOut>> map) => maybe.IsNone ? new(errNone, null) : map(maybe.value);
+    public static Res<TOut> Map<T, TOut>(this Opt<T> maybe, Func<T, Res<TOut>> map)
+        => maybe.IsNone ? new(errNone, null) : map(maybe.value);
 
 
     // TryMap: ()->Res<T>
@@ -514,17 +527,6 @@ public static partial class Extensions
         catch (Exception e) { return new Res<TOut>(e, null); }
     }
     /// <summary>
-    /// Returns Err of <typeref name="TOut"/> when IsErr.
-    /// When IsOk, tries to return ToRes(<paramref name="map"/>()); returns Err if the method throws.
-    /// Note that ToRes maps Some to Ok, and None to Err.
-    /// </summary>
-    public static Res<TOut> TryMap<T, TOut>(this Res<T> result, Func<Opt<TOut>> map)
-    {
-        if (result.IsErr) return new(result.ErrorMessage.value, null);
-        try { return Ok(map()); }
-        catch (Exception e) { return new Res<TOut>(e, null); }
-    }
-    /// <summary>
     /// Returns Err of <typeref name="TOut"/> when <paramref name="result"/> IsErr.
     /// When IsOk, tries to return Ok(<paramref name="map"/>()); returns Err if the method throws.
     /// </summary>
@@ -542,17 +544,6 @@ public static partial class Extensions
     {
         if (result.IsErr) return new(result.ErrorMessage.value, null);
         try { return map(result.value); }
-        catch (Exception e) { return new Res<TOut>(e, null); }
-    }
-    /// <summary>
-    /// Returns Err of <typeref name="TOut"/> when IsErr.
-    /// When IsOk, tries to return ToRes(<paramref name="map"/>(result.Unwrap())); returns Err if the method throws.
-    /// Note that ToRes maps Some to Ok, and None to Err.
-    /// </summary>
-    public static Res<TOut> TryMap<T, TOut>(this Res<T> result, Func<T, Opt<TOut>> map)
-    {
-        if (result.IsErr) return new(result.ErrorMessage.value, null);
-        try { return Ok(map(result.value)); }
         catch (Exception e) { return new Res<TOut>(e, null); }
     }
 
@@ -628,11 +619,13 @@ public static partial class Extensions
     /// <summary>
     /// <inheritdoc cref="Run{T}(Opt{T}, Action)"/>
     /// </summary>
-    public static Task<Res<T>> RunAsync<T>(this Res<T> result, Func<Task> action) { if (result.IsOk) action(); return Task.FromResult(result); }
+    public static Task<Res<T>> RunAsync<T>(this Res<T> result, Func<Task> action)
+    { if (result.IsOk) action(); return Task.FromResult(result); }
     /// <summary>
     /// <inheritdoc cref="Run{T}(Res{T}, Action{T})"/>
     /// </summary>
-    public static Task<Res<T>> RunAsync<T>(this Res<T> result, Func<T, Task> action) { if (result.IsOk) action(result.value); return Task.FromResult(result); }
+    public static Task<Res<T>> RunAsync<T>(this Res<T> result, Func<T, Task> action)
+    { if (result.IsOk) action(result.value); return Task.FromResult(result); }
 
 
     // Try: ()->Res
@@ -698,70 +691,70 @@ public static partial class Extensions
     /// <summary>
     /// <inheritdoc cref="Map(Res, Func{Res})"/>
     /// </summary>
-    public static Task<Res> MapAsync(this Res result, Func<Task<Res>> map) => result.IsErr ? Task.FromResult(new Res(result.ErrorMessage.value, null)) : map();
+    public static Task<Res> MapAsync(this Res result, Func<Task<Res>> map)
+        => result.IsErr ? Task.FromResult(new Res(result.ErrorMessage.value, null)) : map();
     
     
     // Map: Res->Res<T>
     /// <summary>
     /// <inheritdoc cref="Map{TOut}(Res, Func{TOut})"/>
     /// </summary>
-    public static async Task<Res<TOut>> MapAsync<TOut>(this Res result, Func<Task<TOut>> map) => result.IsErr ? new(result.ErrorMessage.value, null) : Ok(await map());
+    public static async Task<Res<TOut>> MapAsync<TOut>(this Res result, Func<Task<TOut>> map)
+        => result.IsErr ? new(result.ErrorMessage.value, null) : Ok(await map());
     /// <summary>
     /// <inheritdoc cref="Map{TOut}(Res, Func{Res{TOut}})"/>
     /// </summary>
-    public static Task<Res<TOut>> MapAsync<TOut>(this Res result, Func<Task<Res<TOut>>> map) => result.IsErr ? Task.FromResult<Res<TOut>>(new(result.ErrorMessage.value, null)) : map();
-    /// <summary>
-    /// <inheritdoc cref="Map{TOut}(Res, Func{Opt{TOut}})"/>
-    /// </summary>
-    public static async Task<Res<TOut>> MapAsync<TOut>(this Res result, Func<Task<Opt<TOut>>> map) => result.IsErr ? new(result.ErrorMessage.value, null) : Ok(await map());
+    public static Task<Res<TOut>> MapAsync<TOut>(this Res result, Func<Task<Res<TOut>>> map)
+        => result.IsErr ? Task.FromResult<Res<TOut>>(new(result.ErrorMessage.value, null)) : map();
+
 
     // Map: Res<t>->Res
     /// <summary>
     /// <inheritdoc cref="Map(Res, Func{Res})"/>
     /// </summary>
-    public static Task<Res> MapAsync<T>(this Res<T> result, Func<Task<Res>> map) => result.IsErr ? Task.FromResult(new Res(result.ErrorMessage.value, null)) : map();
+    public static Task<Res> MapAsync<T>(this Res<T> result, Func<Task<Res>> map)
+        => result.IsErr ? Task.FromResult(new Res(result.ErrorMessage.value, null)) : map();
     /// <summary>
     /// <inheritdoc cref="Map{T}(Res{T}, Func{T, Res})"/>
     /// </summary>
-    public static Task<Res> MapAsync<T>(this Res<T> result, Func<T, Task<Res>> map) => result.IsErr ? Task.FromResult(new Res(result.ErrorMessage.value, null)) : map(result.value);
+    public static Task<Res> MapAsync<T>(this Res<T> result, Func<T, Task<Res>> map)
+        => result.IsErr ? Task.FromResult(new Res(result.ErrorMessage.value, null)) : map(result.value);
     
     
     // Map: Res<t>->Res<T>
     /// <summary>
     /// <inheritdoc cref="Map{T, TOut}(Res{T}, Func{TOut})"/>
     /// </summary>
-    public static async Task<Res<TOut>> MapAsync<T, TOut>(this Res<T> result, Func<Task<TOut>> map) => result.IsErr ? new(result.ErrorMessage.value, null) : Ok(await map());
+    public static async Task<Res<TOut>> MapAsync<T, TOut>(this Res<T> result, Func<Task<TOut>> map)
+        => result.IsErr ? new(result.ErrorMessage.value, null) : Ok(await map());
     /// <summary>
     /// <inheritdoc cref="Map{T, TOut}(Res{T}, Func{T, TOut})"/>
     /// </summary>
-    public static async Task<Res<TOut>> MapAsync<T, TOut>(this Res<T> result, Func<T, Task<TOut>> map) => result.IsErr ? new(result.ErrorMessage.value, null) : Ok(await map(result.value));
+    public static async Task<Res<TOut>> MapAsync<T, TOut>(this Res<T> result, Func<T, Task<TOut>> map)
+        => result.IsErr ? new(result.ErrorMessage.value, null) : Ok(await map(result.value));
     /// <summary>
     /// <inheritdoc cref="Map{T, TOut}(Res{T}, Func{Res{TOut}})"/>
     /// </summary>
-    public static Task<Res<TOut>> MapAsync<T, TOut>(this Res<T> result, Func<Task<Res<TOut>>> map) => result.IsErr ? Task.FromResult(new Res<TOut>(result.ErrorMessage.value, null)) : map();
+    public static Task<Res<TOut>> MapAsync<T, TOut>(this Res<T> result, Func<Task<Res<TOut>>> map)
+        => result.IsErr ? Task.FromResult(new Res<TOut>(result.ErrorMessage.value, null)) : map();
     /// <summary>
     /// <inheritdoc cref="Map{T, TOut}(Res{T}, Func{T, Res{TOut}})"/>
     /// </summary>
-    public static Task<Res<TOut>> MapAsync<T, TOut>(this Res<T> result, Func<T, Task<Res<TOut>>> map) => result.IsErr ? Task.FromResult(new Res<TOut>(result.ErrorMessage.value, null)) : map(result.value);
-    /// <summary>
-    /// <inheritdoc cref="Map{T, TOut}(Res{T}, Func{Opt{TOut}})"/>
-    /// </summary>
-    public static async Task<Res<TOut>> MapAsync<T, TOut>(this Res<T> result, Func<Task<Opt<TOut>>> map) => result.IsErr ? new Res<TOut>(result.ErrorMessage.value, null) : Ok(await map());
-    /// <summary>
-    /// <inheritdoc cref="Map{T, TOut}(Res{T}, Func{T, Opt{TOut}})"/>
-    /// </summary>
-    public static async Task<Res<TOut>> MapAsync<T, TOut>(this Res<T> result, Func<T, Task<Opt<TOut>>> map) => result.IsErr ? new Res<TOut>(result.ErrorMessage.value, null) : Ok(await map(result.value));
+    public static Task<Res<TOut>> MapAsync<T, TOut>(this Res<T> result, Func<T, Task<Res<TOut>>> map)
+        => result.IsErr ? Task.FromResult(new Res<TOut>(result.ErrorMessage.value, null)) : map(result.value);
 
 
     // Map: Opt<t>->Res<T>
     /// <summary>
     /// <inheritdoc cref="Map{T, TOut}(Opt{T}, Func{Res{TOut}})"/>
     /// </summary>
-    public static Task<Res<TOut>> MapAsync<T, TOut>(this Opt<T> maybe, Func<Task<Res<TOut>>> map) => maybe.IsNone ? Task.FromResult(new Res<TOut>("None->Res", "Map")) : map();
+    public static Task<Res<TOut>> MapAsync<T, TOut>(this Opt<T> maybe, Func<Task<Res<TOut>>> map)
+        => maybe.IsNone ? Task.FromResult(new Res<TOut>("None->Res", "Map")) : map();
     /// <summary>
     /// <inheritdoc cref="Map{T, TOut}(Opt{T}, Func{T, Res{TOut}})"/>
     /// </summary>
-    public static Task<Res<TOut>> MapAsync<T, TOut>(this Opt<T> maybe, Func<T, Task<Res<TOut>>> map) => maybe.IsNone ? Task.FromResult(new Res<TOut>("None->Res", "Map")) : map(maybe.value);
+    public static Task<Res<TOut>> MapAsync<T, TOut>(this Opt<T> maybe, Func<T, Task<Res<TOut>>> map)
+        => maybe.IsNone ? Task.FromResult(new Res<TOut>("None->Res", "Map")) : map(maybe.value);
 
 
     // TryMap: ()->Res<T>
@@ -1003,5 +996,6 @@ public static partial class Extensions
     /// <summary>
     /// Returns Ok(<paramref name="value"/>) if <paramref name="validator"/>(<paramref name="value"/>) returns true; Err(<paramref name="errorMessage"/>) otherwise.
     /// </summary>
-    public static Res<T> Validate<T>(this T value, Func<T, bool> validator, string errorMessage) => validator(value) ? Ok(value) : Err<T>(errorMessage);
+    public static Res<T> Validate<T>(this T value, Func<T, bool> validator, string errorMessage)
+        => validator(value) ? Ok(value) : Err<T>(errorMessage);
 }

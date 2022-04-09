@@ -1,14 +1,13 @@
 using System;
 using System.Text;
 using System.Text.RegularExpressions;
-
 namespace Fun;
 
 /// <summary>
 /// Immutable result type which can either be Ok or Err.
 /// When the state <see cref="IsErr"/>, the result further holds Some <see cref="ErrorMessage"/>.
 /// </summary>
-public readonly struct Res
+public readonly struct Res : IEquatable<Res>
 {
     // Data
     readonly string errorMessage;
@@ -16,15 +15,19 @@ public readonly struct Res
     /// <summary>
     /// True if the result is Ok; false otherwise.
     /// </summary>
-    public bool IsOk => errorMessage == null;
+    public bool IsOk
+        => errorMessage == null;
     /// <summary>
     /// True if the result is Err; false otherwise.
     /// </summary>
-    public bool IsErr => errorMessage != null;
+    public bool IsErr
+        => errorMessage != null;
     /// <summary>
     /// Returns the underlying error message which is Some when the result <see cref="IsErr"/>; None when <see cref="IsOk"/>;
     /// </summary>
-    public Opt<string> ErrorMessage => errorMessage == null ? new() : new(errorMessage);
+    public Opt<string> ErrorMessage
+        => errorMessage == null ? new() : new(errorMessage);
+
 
     // Ctor
     /// <summary>
@@ -69,27 +72,33 @@ public readonly struct Res
     /// <summary>
     /// Converts the option to its equivalent string representation.
     /// </summary>
-    public override string ToString() => IsOk ? "Ok" : $"Err({errorMessage})";
+    public override string ToString()
+        => IsOk ? "Ok" : $"Err({errorMessage})";
     /// <summary>
     /// Returns whether this result is equal to the <paramref name="other"/>.
     /// </summary>
-    public bool Equals(Res other) => this == other;
+    public bool Equals(Res other)
+        => this == other;
     /// <summary>
     /// Returns whether <paramref name="first"/> is equal to <paramref name="second"/>.
     /// </summary>
-    public static bool operator ==(Res first, Res second) => first.IsOk && second.IsOk;
+    public static bool operator ==(Res first, Res second)
+        => first.IsOk && second.IsOk;
     /// <summary>
     /// Returns whether <paramref name="first"/> is not equal to <paramref name="second"/>.
     /// </summary>
-    public static bool operator !=(Res first, Res second) => first.IsErr || second.IsErr;
+    public static bool operator !=(Res first, Res second)
+        => first.IsErr || second.IsErr;
     /// <summary>
     /// Returns whether this result is equal to the <paramref name="obj"/>.
     /// </summary>
-    public override bool Equals(object obj) => (obj is Res) ? (this == (Res)obj) : false;
+    public override bool Equals(object obj)
+        => (obj is Res) && (this == (Res)obj);
     /// <summary>
     /// Serves as the default hash function.
     /// </summary>
-    public override int GetHashCode() => IsErr ? errorMessage.GetHashCode() : int.MaxValue;
+    public override int GetHashCode()
+        => IsErr ? errorMessage.GetHashCode() : int.MaxValue;
 
 
     // Method Helper
