@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
+﻿using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 namespace Fun;
@@ -70,37 +66,32 @@ public static partial class Extensions
     /// <summary>
     /// Creates a result: Ok if <paramref name="successCondition"/> is true; Err with the given <paramref name="failureMessage"/> if false.
     /// </summary>
-    public static Res ResFromStatus(bool successCondition, string failureMessage)
+    public static Res ResFromStatus(this bool successCondition, string failureMessage = "status-false")
         => successCondition ? new() : new(failureMessage, null);
     /// <summary>
     /// Creates a result: Ok if <paramref name="httpStatusCode"/> is 200-OK; Err with the given <paramref name="failureMessage"/> otherwise.
     /// </summary>
-    public static Res ResFromStatus(HttpStatusCode httpStatusCode, string failureMessage)
+    public static Res ResFromStatus(this HttpStatusCode httpStatusCode, string failureMessage = "HttpStatusCode != OK")
         => httpStatusCode == HttpStatusCode.OK ? new() : new(failureMessage, null);
     /// <summary>
     /// Returns Ok(<paramref name="response"/>) if response.StatusCode is 200-OK; Err with the given <paramref name="failureMessage"/> otherwise.
     /// </summary>
-    public static Res<HttpResponseMessage> ResFromStatus(this HttpResponseMessage response, string failureMessage)
+    public static Res<HttpResponseMessage> ResFromStatus(this HttpResponseMessage response, string failureMessage = "HttpStatusCode != OK")
         => response.StatusCode == HttpStatusCode.OK ? Ok(response) : new($"[StatusCode: {response.StatusCode}] {failureMessage}", null);
     /// <summary>
     /// Returns back <paramref name="result"/> if result.IsOk and StatusCode of the HttpResponseMessage is 200-OK; Err with the given <paramref name="failureMessage"/> otherwise.
     /// </summary>
-    public static Res<HttpResponseMessage> ResFromStatus(this Res<HttpResponseMessage> result, string failureMessage)
+    public static Res<HttpResponseMessage> ResFromStatus(this Res<HttpResponseMessage> result, string failureMessage = "HttpStatusCode != OK")
         => result.IsErr ? new(result.ErrorMessage.value, null) : ResFromStatus(result.value, failureMessage);
 
 
-    // Conversion
+    // ToRes
     /// <summary>
     /// Converts Opt to Res: maps <paramref name="maybe"/> to Ok of its value when IsSome; to Err when IsNone.
     /// </summary>
-    public static Res<T> ToRes<T>(this Opt<T> maybe)
-        => maybe.IsNone ? Err<T>("None->Res", $"ToRes<{typeof(T).Name}>") : Ok(maybe.value);
-    /// <summary>
-    /// Converts Res{T} to just Res without the value: Ok(val)->Ok(); Err(msg)-Err(msg).
-    /// </summary>
-    public static Res ToRes<T>(this Res<T> result)
-        => result.IsErr ? new(result.ErrorMessage.value) : new(null);
-
+    public static Res<T> ToRes<T>(this Opt<T> maybe, string errorMessage = "None->Res")
+        => maybe.IsNone ? Err<T>(errorMessage) : Ok(maybe.value);
+    
 
     // Res - Err
     /// <summary>
@@ -210,6 +201,9 @@ public static partial class Extensions
     /// </summary>
     public static Res<T> RunIfErr<T>(this Res<T> result, Action action)
     { if (result.IsErr) action(); return result; }
+    
+
+    // Match
     /// <summary>
     /// Maps <paramref name="result"/> into <paramref name="ok"/>(maybe.Unwrap()) whenever maybe.IsSome; and into <paramref name="err"/>(maybe.ErrorMessage.Unwrap()) otherwise.
     /// </summary>

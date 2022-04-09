@@ -62,47 +62,6 @@ public static class ExampleOpt
         duration = optDuration.Unwrap(TimeSpan.FromSeconds(10));
         Assert(duration.Seconds == 10, "must be unwrapped to 10 secs");
 
-        // Keep it flat, none of the nested options is useful:
-        // * None(None)     -> just None
-        // * None(Some(x))  -> just None
-        // * Some(None)     -> just None
-        // * Some(Some(x))  -> just Some(x)
-        // None(None) -> None
-        Assert(None<int>(None<int>()) == None<int>(), "options must be flattened");
-        Assert(None<int>(None<int>()).GetType() == typeof(Opt<int>), "options must be flattened");
-        // None(Some(x)) -> None
-        Assert(None<int>(Some(12)) == None<int>(), "options must be flattened");
-        Assert(None<int>(Some(12)).GetType() == typeof(Opt<int>), "options must be flattened");
-        // Some(None) -> None
-        Assert(Some(None<int>()) == None<int>(), "options must be flattened");
-        Assert(Some(None<int>()).GetType() == typeof(Opt<int>), "options must be flattened");
-        // Some(Some(x)) -> Some(x)
-        Assert(Some(Some(12)) == Some<int>(12), "options must be flattened");
-        Assert(Some(Some(12)).GetType() == typeof(Opt<int>), "options must be flattened");
-        Assert(Some(Some(Some(12))) == Some<int>(12), "options must be flattened");
-        Assert(Some(Some(Some(12))).GetType() == typeof(Opt<int>), "options must be flattened");
-        //Assert(Some<int>(Some<float>(12)), "this is not correct; further, does not compile, type-safe");
-
-        // Flatness must also be preserved with Res, none of the following combinations is useful:
-        // * None(Err)      -> just None
-        // * None(Ok(x))    -> just None
-        // * Some(Err)      -> just None
-        // * Some(Ok(x))    -> just Some(x)
-        // None(Err) -> None
-        Assert(None<int>(Err<int>("bad")) == None<int>(), "option-of-result must be flattened");
-        Assert(None<int>(Err<int>("bad")).GetType() == typeof(Opt<int>), "option-of-result must be flattened");
-        // None(Ok(x)) -> None
-        Assert(None<int>(Ok(12)) == None<int>(), "option-of-result must be flattened");
-        Assert(None<int>(Ok(12)).GetType() == typeof(Opt<int>), "option-of-result must be flattened");
-        // Some(Err) -> None
-        Assert(Some(Err<int>("bad")) == None<int>(), "option-of-result must be flattened");
-        Assert(Some(Err<int>("bad")).GetType() == typeof(Opt<int>), "option-of-result must be flattened");
-        // Some(Ok(x)) -> Some(x)
-        Assert(Some(Ok(12)) == Some<int>(12), "option-of-result must be flattened");
-        Assert(Some(Ok(12)).GetType() == typeof(Opt<int>), "option-of-result must be flattened");
-        Assert(Some(Ok(Some(12))) == Some<int>(12), "option-of-result must be flattened");
-        Assert(Some(Ok(Some(12))).GetType() == typeof(Opt<int>), "option-of-result must be flattened");
-
         // Opt for optional parameters
         static DataTable GetQuery(string query, Opt<int> timeoutMilliseconds)
         {
@@ -208,15 +167,15 @@ public static class ExampleOpt
         Assert(gotNoWizard.IsNone, "GetValueOrNone must return None when the key is absent");
 
         // eleavate regular collections to Opt collections
-        List<Opt<Wizard>> optList = valueList.ToOptList();    // must map null's to None
+        List<Opt<Wizard>> optList = valueList.ToOpt().ToList();    // must map null's to None
         Assert(optList.Count == valueList.Count);
         for (var i = 0; i < optList.Count; i++)
             Assert(valueList[i] == null ? optList[i].IsNone : optList[i].IsSome);
         // can similarly convert to other enumerables
-        Opt<Wizard>[] optArr = valueList.ToOptArray();
-        IEnumerable<Opt<Wizard>> optEnumerable = valueList.ToOptEnumerable();
+        Opt<Wizard>[] optArr = valueList.ToOpt().ToArray();
+        IEnumerable<Opt<Wizard>> optEnumerable = valueList.ToOpt();
         // finally, Dictionary<TKey, TValue> can be converted into Dictionary<TKey, Opt<TValue>>
-        var dictMaybeWizards = dictWizards.ToOptDictionary();
+        var dictMaybeWizards = dictWizards.ToOpt();
         Assert(dictMaybeWizards["Merlin"] == new Wizard("Merlin", 42));
         Assert(dictMaybeWizards["Bad Wizard"].IsNone);
 

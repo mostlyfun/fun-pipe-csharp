@@ -6,8 +6,8 @@ namespace Fun.Pipe.Examples;
 
 internal static class ExamplePipeWebReq
 {
-    static readonly HttpClient client = new HttpClient();
-    static (double flip, string wizardGuid)[] guidsAndFlips = new[]
+    static readonly HttpClient client = new();
+    static readonly (double flip, string wizardGuid)[] guidsAndFlips = new[]
     {
         (0.2, "Morgana-77"),            // willResultInNotFound
         (0.4, "Shadow Shaman-34"),      // will make it through
@@ -16,7 +16,9 @@ internal static class ExamplePipeWebReq
         (0.5, "Morgana-notanumber"),    // willResultInDeserializationError
         (0.8, "Gandalf-54"),            // will make it through
     };
-    // Run
+    
+    
+    // Variants
     static async Task<bool> Imperative(double flip, string wizardGuid)
     {
         static async Task<Wizard> GetWizardImperative(double flip, string wizardGuid)
@@ -106,7 +108,8 @@ internal static class ExamplePipeWebReq
                 return FakeWizardDeserializer(data);
             });
         }
-        static async Task<Res> UpdateWizard(double flip, string wizardGuid, Wizard updatedWizard)
+
+        static async Task<Res<HttpResponseMessage>> UpdateWizard(double flip, string wizardGuid, Wizard updatedWizard)
         {
             // below lines aim to simulate the failure possilibity of the request
             bool willResultInForbidden = flip < 0.25;
@@ -115,14 +118,17 @@ internal static class ExamplePipeWebReq
             // post the updated wizard
             var content = new StringContent($"{wizardGuid}-{updatedWizard.NbSpells}");
             var response = await TryMapAsync(() => client.PostAsync(url, content));
-            return response.Map((HttpResponseMessage x) => x.ResFromStatus("wizard could not be updated")).ToRes();
+            return response.Map(x => x.ResFromStatus("wizard could not be updated"));
         }
+
+
         // Run
         var wizard = await GetWizard(flip, wizardGuid);
-        var pushed = await wizard.Map(w => DuelBalrogDemon(w))
-                                .MapAsync(w => UpdateWizard(flip, wizardGuid, w));
-        return pushed;
+        var pushed = await wizard.Map(w => DuelBalrogDemon(w)).MapAsync(w => UpdateWizard(flip, wizardGuid, w));
+        return pushed.Match(_ => Ok(), msg => Err(msg));
     }
+    
+    
     // Helpers
     static Wizard FakeWizardDeserializer(string str)
     {
@@ -135,6 +141,8 @@ internal static class ExamplePipeWebReq
         bool wins = (new Random()).NextDouble() < winProb;
         return wins ? (wizard with { NbSpells = wizard.NbSpells + 10 }) : (wizard with { NbSpells = 0 });
     }
+    
+    
     // Run
     internal static void Run()
     {

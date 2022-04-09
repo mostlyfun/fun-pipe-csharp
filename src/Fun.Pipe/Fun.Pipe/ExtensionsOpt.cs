@@ -1,9 +1,4 @@
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Net.Http;
 using System.Threading.Tasks;
 namespace Fun;
 
@@ -84,7 +79,26 @@ public static partial class Extensions
     /// </summary>
     public static Opt<T> RunIfNone<T>(this Opt<T> maybe, Action action)
     { if (maybe.IsNone) action(); return maybe; }
+
     
+    // Match
+    /// <summary>
+    /// Maps <paramref name="maybe"/> into <paramref name="some"/>(maybe.Unwrap()) whenever maybe.IsSome; and into <paramref name="none"/>() otherwise.
+    /// </summary>
+    public static TOut Match<T, TOut>(this Opt<T> maybe, Func<T, TOut> some, Func<TOut> none)
+    {
+        if (maybe.IsSome) return some(maybe.value);
+        else return none();
+    }
+    /// <summary>
+    /// Maps <paramref name="maybe"/> into <paramref name="some"/>(maybe.Unwrap()) whenever maybe.IsSome; and into <paramref name="none"/> otherwise.
+    /// </summary>
+    public static TOut Match<T, TOut>(this Opt<T> maybe, Func<T, TOut> some, TOut none)
+    {
+        if (maybe.IsSome) return some(maybe.value);
+        else return none;
+    }
+
 
     // Run
     /// <summary>
@@ -305,60 +319,7 @@ public static partial class Extensions
 
 
     // Collections
-    /// <summary>
-    /// Opt counterpart of FirstOrDefault, which returns the first non-null element if <paramref name="enumerable"/> has any, None otherwise.
-    /// </summary>
-    public static Opt<T> FirstOrNone<T>(this IEnumerable<T> enumerable)
-    {
-        if (typeof(T).IsClass)
-        {
-            foreach (var item in enumerable)
-                if (item != null)
-                    return new(item);
-            return new();
-        }
-        else
-        {
-            foreach (var item in enumerable)
-                return new(item);
-            return new();
-        }
-    }
-    /// <summary>
-    /// Opt counterpart of FirstOrDefault, which returns the first Some element if <paramref name="enumerable"/> has any, None otherwise.
-    /// </summary>
-    public static Opt<T> FirstOrNone<T>(this IEnumerable<Opt<T>> enumerable)
-    {
-        foreach (var item in enumerable)
-            if (item.IsSome)
-                return item;
-        return new();
-    }
-    /// <summary>
-    /// Opt counterpart of LastOrDefault, which returns the last non-null element if <paramref name="enumerable"/> has any, None otherwise.
-    /// </summary>
-    public static Opt<T> LastOrNone<T>(this IEnumerable<T> enumerable)
-        => FirstOrNone(enumerable.Reverse());
-    /// <summary>
-    /// Opt counterpart of LastOrDefault, which returns the last Some element if <paramref name="enumerable"/> has any, None otherwise.
-    /// </summary>
-    public static Opt<T> LastOrNone<T>(this IEnumerable<Opt<T>> enumerable)
-        => FirstOrNone(enumerable.Reverse());
-    /// <summary>
-    /// Opt counterpart of FirstOrDefault over results collection, which returns the first Ok element of <paramref name="enumerable"/> if any, None otherwise.
-    /// </summary>
-    public static Opt<T> FirstOrNone<T>(this IEnumerable<Res<T>> enumerable)
-    {
-        foreach (var item in enumerable)
-            if (item.IsOk)
-                return new(item.value);
-        return new();
-    }
-    /// <summary>
-    /// Opt counterpart of LastOrDefault over results collection, which returns the last Ok element of <paramref name="enumerable"/> if any, None otherwise.
-    /// </summary>
-    public static Opt<T> LastOrNone<T>(this IEnumerable<Res<T>> enumerable)
-        => FirstOrNone(enumerable.Reverse());
+    
     
 
     // Validation

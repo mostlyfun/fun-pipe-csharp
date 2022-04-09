@@ -93,32 +93,6 @@ public static class ExampleRes
         Assert(duration.Seconds == 10, "must be unwrapped to 10 secs");
 
 
-        // Keep it flat, none of the nested options is useful:
-        // * Ok(Err)        -> just Err
-        // * Ok(Ok(x))      -> just Ok(x)
-        // Ok(Err) -> Err
-        Assert(Ok(Err<int>("faulty")).IsErr, "results must be flattened");
-        Assert(Ok(Err<int>("faulty")).GetType() == typeof(Res<int>), "results must be flattened");
-        // Ok(Ok(x)) -> Ok(x)
-        Assert(Ok(Ok(12)) == Ok<int>(12), "results must be flattened");
-        Assert(Ok(Ok(12)).GetType() == typeof(Res<int>), "results must be flattened");
-        Assert(Ok(Ok(Ok(12))) == Ok<int>(12), "results must be flattened");
-        Assert(Ok(Ok(Ok(12))).GetType() == typeof(Res<int>), "results must be flattened");
-        //Assert(Ok<int>(Ok<float>(12)), "this is not correct; further, does not compile, type-safe");
-
-        // Flatness must also be preserved with Res, none of the following combinations is useful:
-        // * Ok(None)       -> just Err
-        // * Ok(Some(x))    -> just Ok(x)
-        // Ok(None) -> Err
-        Assert(Ok(None<int>()).IsErr, "result-of-option must be flattened");
-        Assert(Ok(None<int>()).GetType() == typeof(Res<int>), "result-of-option must be flattened");
-        // Some(Ok(x)) -> Some(x)
-        Assert(Ok(Some(12)) == Ok<int>(12), "result-of-option must be flattened");
-        Assert(Ok(Some(12)).GetType() == typeof(Res<int>), "result-of-option must be flattened");
-        Assert(Ok(Some(Ok(12))) == Ok<int>(12), "result-of-option must be flattened");
-        Assert(Ok(Some(Ok(12))).GetType() == typeof(Res<int>), "result-of-option must be flattened");
-
-
         // Res for actions that can fail
         static Res PutWizard(string databaseName, Wizard wizard, double someNumber)
         {

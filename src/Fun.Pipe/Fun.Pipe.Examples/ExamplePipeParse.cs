@@ -43,7 +43,7 @@ public static class ExamplePipeParse
     }
     static Res<int> PipeChain(double flip)
     {
-        return Map(() => GetFilepathFromUser(flip))
+        return GetFilepathFromUser(flip)
             .TryMap(filepath => RiskyParse(filepath))
             .TryMap(numbers => LogAndGetSumAmounts(numbers))
             .MsgIfErr("failed to get sum from file").LogIfErr();

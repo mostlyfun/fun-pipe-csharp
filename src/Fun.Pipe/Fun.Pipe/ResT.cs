@@ -1,4 +1,3 @@
-using System;
 namespace Fun;
 
 /// <summary>
@@ -6,7 +5,7 @@ namespace Fun;
 /// When the state <see cref="IsOk"/>, the result holds the valid value which can be extracted by <see cref="Unwrap()"/> (or <see cref="Unwrap(T)"/>) methods.
 /// When the state <see cref="IsErr"/>, the result further holds Some <see cref="ErrorMessage"/>.
 /// </summary>
-public readonly struct Res<T> : IEquatable<Res<T>>
+public readonly struct Res<T> : IEquatable<T>, IEquatable<Opt<T>>, IEquatable<Res<T>>
 {
     // Data
     internal readonly T value;
@@ -135,20 +134,45 @@ public readonly struct Res<T> : IEquatable<Res<T>>
         return $"Ok({strValue})";
     }
     /// <summary>
-    /// Returns whether this result is equal to the <paramref name="other"/>.
-    /// </summary>
-    public bool Equals(Res<T> other)
-        => this == other;
-    /// <summary>
-    /// Returns whether <paramref name="first"/> is equal to <paramref name="second"/>.
+    /// Returns true if both values are <see cref="IsOk"/> and their unwrapped values are equal; false otherwise.
     /// </summary>
     public static bool operator ==(Res<T> first, Res<T> second)
         => !first.IsErr && !second.IsErr && first.value.Equals(second.value);
     /// <summary>
-    /// Returns whether <paramref name="first"/> is not equal to <paramref name="second"/>.
+    /// Returns true if either value <see cref="IsErr"/> or their unwrapped values are not equal; false otherwise.
     /// </summary>
     public static bool operator !=(Res<T> first, Res<T> second)
         => first.IsErr || second.IsErr || !first.value.Equals(second.value);
+    /// <summary>
+    /// Returns true if lhs <see cref="IsOk"/> and its unwrapped value is equal to the rhs; false otherwise.
+    /// </summary>
+    public static bool operator ==(Res<T> first, T second)
+        => first.IsOk && first.value.Equals(second);
+    /// <summary>
+    /// Returns true if lhs <see cref="IsErr"/> or its unwrapped value is not equal to the rhs; false otherwise.
+    /// </summary>
+    public static bool operator !=(Res<T> first, T second)
+        => first.IsErr || !first.value.Equals(second);
+    /// <summary>
+    /// Returns true if rhs <see cref="IsOk"/> and its unwrapped value is equal to the lhs; false otherwise.
+    /// </summary>
+    public static bool operator ==(T first, Res<T> second)
+        => second.IsOk && second.value.Equals(first);
+    /// <summary>
+    /// Returns true if rhs <see cref="IsErr"/> or its unwrapped value is not equal to the lhs; false otherwise.
+    /// </summary>
+    public static bool operator !=(T first, Res<T> second)
+        => second.IsErr || !second.value.Equals(first);
+    /// <summary>
+    /// Returns true if rhs.IsSome and lhs.IsOk and their unwrapped values are equal; false otherwise.
+    /// </summary>
+    public static bool operator ==(Res<T> first, Opt<T> second)
+        => second.IsSome && first.IsOk && second.value.Equals(first.value);
+    /// <summary>
+    /// Returns true if rhs.IsNone and lhs.IsErr and their unwrapped values are not equal; false otherwise.
+    /// </summary>
+    public static bool operator !=(Res<T> first, Opt<T> second)
+        => second.IsNone || first.IsErr || !second.value.Equals(first.value);
     /// <summary>
     /// Returns whether this result is equal to the <paramref name="obj"/>.
     /// </summary>
@@ -160,12 +184,17 @@ public readonly struct Res<T> : IEquatable<Res<T>>
     public override int GetHashCode()
         => IsErr ? errorMessage.GetHashCode() : value.GetHashCode();
     /// <summary>
-    /// Returns true if this <see cref="IsOk"/> and its unwrapped value is equal to the <paramref name="other"/>; false otherwise.
+    /// <inheritdoc cref="operator ==(Res{T}, Res{T})"/>
+    /// </summary>
+    public bool Equals(Res<T> other)
+        => this == other;
+    /// <summary>
+    /// <inheritdoc cref="operator ==(Res{T}, T)"/>
     /// </summary>
     public bool Equals(T other)
         => this == other;
     /// <summary>
-    /// Returns true if this <see cref="IsOk"/>, the other <see cref="Opt{T}.IsSome"/>; and its unwrapped value is equal to <paramref name="other"/>'s unwrapped value; false otherwise.
+    /// <inheritdoc cref="operator ==(Res{T}, Opt{T})"/>
     /// </summary>
     public bool Equals(Opt<T> other)
         => IsOk && other.IsSome && value.Equals(other.value);

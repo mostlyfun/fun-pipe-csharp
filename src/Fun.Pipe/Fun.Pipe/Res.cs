@@ -1,4 +1,3 @@
-using System;
 using System.Text;
 using System.Text.RegularExpressions;
 namespace Fun;
@@ -35,7 +34,7 @@ public readonly struct Res : IEquatable<Res>
     /// Parameterless ctor returns Ok; use 'Fun.Extensions.Ok' or `Fun.Extensions.Err` to construct options.
     /// Better to add `using static Fun.Extensions` and use `Ok` and `Err` directly.
     /// </summary>
-    public Res() => errorMessage = "constructed with Res(); rather than Ok() or Err(...)";
+    public Res() => errorMessage = "default-ctor-error";
     internal Res(string errorMessage) => this.errorMessage = errorMessage;
     internal Res(string errorMessage, string when) => this.errorMessage = GetErrorMessage(errorMessage, when);
     internal Res(Exception exception, string when) => this.errorMessage = GetExceptionMessage(exception, when);
@@ -51,7 +50,7 @@ public readonly struct Res : IEquatable<Res>
     {
         if (this.errorMessage == null)
             return this;
-        string msg = this.errorMessage + Environment.NewLine + ": " + Res.GetErrorMessage(errorMessage, null);
+        string msg = string.Format("{0}\n: {1}", this.errorMessage, GetErrorMessage(errorMessage, null));
         return new(msg, null);
     }
     /// <summary>
@@ -63,7 +62,7 @@ public readonly struct Res : IEquatable<Res>
     {
         if (this.errorMessage == null)
             return this;
-        string msg = this.errorMessage + Environment.NewLine + ": " + Res.GetErrorMessage(errorMessage, when);
+        string msg = string.Format("{0}\n: {1}", this.errorMessage, GetErrorMessage(errorMessage, when));
         return new(msg, null);
     }
 
@@ -107,7 +106,7 @@ public readonly struct Res : IEquatable<Res>
     {
         if (errorMessage == null)
             errorMessage = string.Empty;
-        return when == null ? errorMessage : $"[{when}] {errorMessage}";
+        return when == null ? errorMessage : string.Format("[{0}] {1}", when, errorMessage);
     }
     internal static string GetExceptionMessage(Exception exception, string when)
     {
@@ -133,7 +132,7 @@ public readonly struct Res : IEquatable<Res>
                 var parts = Regex.Split(line, patternStackTrace);
                 if (parts.Length < 7) { sb.Append("    -> ").AppendLine(line.Trim()); continue; }
                 int indLastSlash = parts[4].LastIndexOf('\\');
-                string file = indLastSlash < 1 ? parts[4] : parts[4].Substring(indLastSlash + 1);
+                //string file = indLastSlash < 1 ? parts[4] : parts[4].Substring(indLastSlash + 1);
                 sb.Append("    -> ").Append(parts[2]).Append(" | ").AppendLine(parts[6]);
             }
         }
