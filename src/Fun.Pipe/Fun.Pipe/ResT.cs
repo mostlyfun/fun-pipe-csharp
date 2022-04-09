@@ -92,6 +92,18 @@ public readonly struct Res<T> : IEquatable<T>, IEquatable<Opt<T>>, IEquatable<Re
     public T Unwrap(T fallbackValue)
         => errorMessage == null ? value : fallbackValue;
     /// <summary>
+    /// Returns the value when <see cref="IsOk"/>; or returns <paramref name="lazyFallbackValue"/>() when <see cref="IsErr"/>.
+    /// </summary>
+    /// <param name="lazyFallbackValue"></param>
+    public T Unwrap(Func<T> lazyFallbackValue)
+        => IsErr ? lazyFallbackValue() : value;
+    /// <summary>
+    /// Returns the value when <see cref="IsOk"/>; or returns <paramref name="lazyFallbackValue"/>() when <see cref="IsErr"/>.
+    /// </summary>
+    /// <param name="lazyFallbackValue"></param>
+    public Task<T> Unwrap(Func<Task<T>> lazyFallbackValue)
+        => IsErr ? lazyFallbackValue() : Task.FromResult(value);
+    /// <summary>
     /// <inheritdoc cref="Res.MsgIfErr(string)"/>
     /// </summary>
     public Res<T> MsgIfErr(string errorMessage)

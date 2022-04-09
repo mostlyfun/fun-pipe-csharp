@@ -75,6 +75,27 @@ public readonly struct Opt<T> : IEquatable<T>, IEquatable<Opt<T>>, IEquatable<Re
     /// <param name="fallbackValue"></param>
     public T Unwrap(T fallbackValue)
         => IsNone ? fallbackValue : value;
+    /// <summary>
+    /// Returns the value when <see cref="IsSome"/>; or returns <paramref name="lazyFallbackValue"/>() when <see cref="IsNone"/>.
+    /// </summary>
+    /// <param name="lazyFallbackValue"></param>
+    public T Unwrap(Func<T> lazyFallbackValue)
+        => IsNone ? lazyFallbackValue() : value;
+    /// <summary>
+    /// Returns the value when <see cref="IsSome"/>; or returns <paramref name="lazyFallbackValue"/>() when <see cref="IsNone"/>.
+    /// </summary>
+    /// <param name="lazyFallbackValue"></param>
+    public Task<T> Unwrap(Func<Task<T>> lazyFallbackValue)
+        => IsNone ? lazyFallbackValue() : Task.FromResult(value);
+    /// <summary>
+    /// Returns the value when <see cref="IsSome"/>; throws with the given <paramref name="errorMessage"/> when <see cref="IsNone"/>.
+    /// </summary>
+    public T UnwrapOrThrow(string errorMessage)
+    {
+        if (IsNone)
+            throw new ArgumentException(errorMessage);
+        return value;
+    }
 
 
     // Common
