@@ -98,6 +98,14 @@ public static partial class Extensions
         if (maybe.IsSome) return some(maybe.value);
         else return none;
     }
+    /// <summary>
+    /// Executes <paramref name="some"/>(maybe.Unwrap()) whenever <paramref name="maybe"/>.IsSome; <paramref name="none"/>() otherwise.
+    /// </summary>
+    public static void Match<T>(this Opt<T> maybe, Action<T> some, Action none)
+    {
+        if (maybe.IsSome) some(maybe.value);
+        else none();
+    }
 
 
     // Run

@@ -201,11 +201,44 @@ public static partial class Extensions
     /// </summary>
     public static Res<T> RunIfErr<T>(this Res<T> result, Action action)
     { if (result.IsErr) action(); return result; }
-    
 
-    // Match
+
+    // Match - Res
     /// <summary>
-    /// Maps <paramref name="result"/> into <paramref name="ok"/>(maybe.Unwrap()) whenever maybe.IsSome; and into <paramref name="err"/>(maybe.ErrorMessage.Unwrap()) otherwise.
+    /// Maps <paramref name="result"/> into <paramref name="ok"/>() whenever result.IsOk; and into <paramref name="err"/>(result.ErrorMessage.Unwrap()) otherwise.
+    /// </summary>
+    public static TOut Match<TOut>(this Res result, Func<TOut> ok, Func<string, TOut> err)
+    {
+        if (result.IsOk) return ok();
+        else return err(result.ErrorMessage.Unwrap());
+    }
+    /// <summary>
+    /// Maps <paramref name="result"/> into <paramref name="ok"/>() whenever result.IsOk; and into <paramref name="err"/> otherwise.
+    /// </summary>
+    public static TOut Match<TOut>(this Res result, Func<TOut> ok, TOut err)
+    {
+        if (result.IsOk) return ok();
+        else return err;
+    }
+    /// <summary>
+    /// Executes <paramref name="ok"/>() whenever <paramref name="result"/>.IsOk; <paramref name="err"/>(result.ErrorMessage.Unwrap()) otherwise.
+    /// </summary>
+    public static void Match<T>(this Res result, Action ok, Action<string> err)
+    {
+        if (result.IsOk) ok();
+        else err(result.ErrorMessage.Unwrap());
+    }
+    /// <summary>
+    /// Executes <paramref name="ok"/>() whenever <paramref name="result"/>.IsOk; <paramref name="err"/>() otherwise.
+    /// </summary>
+    public static void Match<T>(this Res result, Action ok, Action err)
+    {
+        if (result.IsOk) ok();
+        else err();
+    }
+    // Match - Res<T>
+    /// <summary>
+    /// Maps <paramref name="result"/> into <paramref name="ok"/>(result.Unwrap()) whenever result.IsOk; and into <paramref name="err"/>(result.ErrorMessage.Unwrap()) otherwise.
     /// </summary>
     public static TOut Match<T, TOut>(this Res<T> result, Func<T, TOut> ok, Func<string, TOut> err)
     {
@@ -213,12 +246,28 @@ public static partial class Extensions
         else return err(result.ErrorMessage.Unwrap());
     }
     /// <summary>
-    /// Maps <paramref name="result"/> into <paramref name="ok"/>(maybe.Unwrap()) whenever maybe.IsSome; and into <paramref name="err"/> otherwise.
+    /// Maps <paramref name="result"/> into <paramref name="ok"/>(result.Unwrap()) whenever result.IsOk; and into <paramref name="err"/> otherwise.
     /// </summary>
     public static TOut Match<T, TOut>(this Res<T> result, Func<T, TOut> ok, TOut err)
     {
         if (result.IsOk) return ok(result.value);
         else return err;
+    }
+    /// <summary>
+    /// Executes <paramref name="ok"/>(result.Unwrap()) whenever <paramref name="result"/>.IsOk; <paramref name="err"/>(result.ErrorMessage.Unwrap()) otherwise.
+    /// </summary>
+    public static void Match<T>(this Res<T> result, Action<T> ok, Action<string> err)
+    {
+        if (result.IsOk) ok(result.value);
+        else err(result.ErrorMessage.Unwrap());
+    }
+    /// <summary>
+    /// Executes <paramref name="ok"/>(result.Unwrap()) whenever <paramref name="result"/>.IsOk; <paramref name="err"/>() otherwise.
+    /// </summary>
+    public static void Match<T>(this Res<T> result, Action<T> ok, Action err)
+    {
+        if (result.IsOk) ok(result.value);
+        else err();
     }
 
 
