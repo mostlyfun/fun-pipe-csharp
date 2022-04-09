@@ -80,6 +80,7 @@ public readonly struct Res<T> : IEquatable<T>, IEquatable<Opt<T>>, IEquatable<Re
     /// <summary>
     /// Returns the value when <see cref="IsOk"/>; or throws when <see cref="IsErr"/>.
     /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T Unwrap()
     {
         if (errorMessage != null)
@@ -89,6 +90,7 @@ public readonly struct Res<T> : IEquatable<T>, IEquatable<Opt<T>>, IEquatable<Re
     /// <summary>
     /// Returns the value when <see cref="IsOk"/>; or returns the <paramref name="fallbackValue"/> when <see cref="IsErr"/>.
     /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T Unwrap(T fallbackValue)
         => errorMessage == null ? value : fallbackValue;
     /// <summary>

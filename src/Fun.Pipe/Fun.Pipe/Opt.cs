@@ -63,6 +63,7 @@ public readonly struct Opt<T> : IEquatable<T>, IEquatable<Opt<T>>, IEquatable<Re
     /// <summary>
     /// Returns the value when <see cref="IsSome"/>; or throws when <see cref="IsNone"/>.
     /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T Unwrap()
     {
         if (IsNone)
@@ -73,6 +74,7 @@ public readonly struct Opt<T> : IEquatable<T>, IEquatable<Opt<T>>, IEquatable<Re
     /// Returns the value when <see cref="IsSome"/>; or returns the <paramref name="fallbackValue"/> when <see cref="IsNone"/>.
     /// </summary>
     /// <param name="fallbackValue"></param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T Unwrap(T fallbackValue)
         => IsNone ? fallbackValue : value;
     /// <summary>

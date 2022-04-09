@@ -15,6 +15,7 @@ public static class ExampleRes
 {
     internal static void Run()
     {
+        Log("\nRunning Res Examples");
         // just Ok
         var justOk = Ok();
         Assert(justOk.IsOk);
@@ -200,22 +201,20 @@ public static class ExampleRes
         Assert(sideEffect == 1f, "RunIfErr must be run when IsErr, adding 1f to the sideEffect");
 
         // Res<T>.ToOpt: Err->None, Ok(x)->Some(x)
+        var zz = merlin.ToOpt();
         Assert(merlin.ToOpt() == Some(new Wizard("Merlin", 42)), "ToOpt must map Ok(x) to Some(x)");
-        Assert(wizardFromNull.ToOpt() == None<Wizard>(), "ToOpt must map Err to None");
-        // Opt<T>.ToRes: None->Err, Some(x)->Ok(x)
-        Assert(Some(new Wizard("Merlin", 42)).ToRes() == Ok(new Wizard("Merlin", 42)), "ToRes must map Some(x) to Ok(x)");
-        Assert(None<Wizard>().ToRes().IsErr, "ToRes must map None to Err");
+        Assert(wizardFromNull.ToOpt().IsNone, "ToOpt must map Err to None");
 
         // Res collections
         var errPersons = new List<Res<Wizard>>() { wizardFromException, Err<Wizard>("problem in grabbing wizard") };  // Err, Err
-        Assert(errPersons.FirstOrNone().IsNone, "FirstOrNone must return None");
-        Assert(errPersons.LastOrNone().IsNone, "LastOrNone must return None");
+        Assert(errPersons.FirstOkOrNone().IsNone, "FirstOrNone must return None");
+        Assert(errPersons.LastOkOrNone().IsNone, "LastOrNone must return None");
         Assert(errPersons.UnwrapValues().Any() == false, "UnwrapValues must not yield any");
 
         var resPersons = new Res<Wizard>[]
             { wizardFromException, new Wizard("Jafar", 42), Err<Wizard>("wrong name"), new Wizard("Albus", 42) };  // Err, Jafar, Err, Albus
-        Assert(resPersons.FirstOrNone() == new Wizard("Jafar", 42), "FirstOrNone must return Jafar");
-        Assert(resPersons.LastOrNone() == new Wizard("Albus", 42), "LastOrNone must return Albus");
+        Assert(resPersons.FirstOkOrNone() == new Wizard("Jafar", 42), "FirstOrNone must return Jafar");
+        Assert(resPersons.LastOkOrNone() == new Wizard("Albus", 42), "LastOrNone must return Albus");
         Assert(resPersons.UnwrapValues().Count() == 2, "UnwrapValues must yield two unwrapped value");
         Assert(string.Join(" | ", resPersons.UnwrapValues().Select(p => p.Name)) == "Jafar | Albus");
     }

@@ -29,24 +29,18 @@ public static partial class Extensions
     /// </summary>
     public static Opt<T> ToOpt<T>(this Res<T> result)
         => result.IsErr ? None<T>() : Some(result.value);
+    // ToOpt - From Value
     /// <summary>
-    /// Converts <paramref name="list"/> of <typeparamref name="T"/> into a list of Opt&lt;<typeparamref name="T"/>>.
-    /// If <typeparamref name="T"/> is a reference type; null's will be mapped into None.
+    /// <inheritdoc cref="Some{T}(T)"/>
     /// </summary>
-    public static IEnumerable<Opt<T>> ToOpt<T>(this IEnumerable<T> list)
-        => list.Select(x => Some(x));
+    public static Opt<T> ToOpt<T>(this T value)
+        => Some(value);
     /// <summary>
-    /// Converts <paramref name="dictionary"/> of <typeparamref name="TKey"/>-<typeparamref name="TValue"/> pair into a dictionary with of Opt&lt;<typeparamref name="TValue"/>> as the value type.
-    /// If <typeparamref name="TValue"/> is a reference type; null's will be mapped into None.
+    /// Returns Some(<paramref name="value"/>) if <paramref name="validator"/>(<paramref name="value"/>) returns true; None otherwise.
     /// </summary>
-    public static Dictionary<TKey, Opt<TValue>> ToOpt<TKey, TValue>(this Dictionary<TKey, TValue> dictionary)
-    {
-        var opt = new Dictionary<TKey, Opt<TValue>>(dictionary.Count);
-        foreach (var item in dictionary)
-            opt.Add(item.Key, Some(item.Value));
-        return opt;
-    }
-
+    public static Opt<T> ToOpt<T>(this T value, Func<T, bool> validator)
+        => validator(value) ? Some(value) : None<T>();
+    
 
     // Logical
     /// <summary>
@@ -324,16 +318,4 @@ public static partial class Extensions
     /// </summary>
     public static Opt<TValue> GetValueOrNone<TKey, TValue>(this ConcurrentDictionary<TKey, TValue> dictionary, TKey key)
     { bool s = dictionary.TryGetValue(key, out var val); return s ? Some(val) : None<TValue>(); }
-
-
-    // Collections
-    
-    
-
-    // Validation
-    /// <summary>
-    /// Returns Some(<paramref name="value"/>) if <paramref name="validator"/>(<paramref name="value"/>) returns true; None otherwise.
-    /// </summary>
-    public static Opt<T> Validate<T>(this T value, Func<T, bool> validator)
-        => validator(value) ? Some(value) : None<T>();
 }
