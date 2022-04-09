@@ -125,7 +125,7 @@ internal static class ExamplePipeWebReq
         // Run
         var wizard = await GetWizard(flip, wizardGuid);
         var pushed = await wizard.Map(w => DuelBalrogDemon(w)).MapAsync(w => UpdateWizard(flip, wizardGuid, w));
-        return pushed.Match(_ => Ok(), msg => Err(msg));
+        return pushed.AsRes();
     }
     
     

@@ -90,4 +90,120 @@ public static partial class Extensions
     /// </summary>
     public static Opt<T> LastOkOrNone<T>(this IEnumerable<Res<T>> enumerable, Func<T, bool> predicate)
         => enumerable.LastOrDefault(x => x.IsOk && predicate(x.Unwrap())).AsOpt();
+
+
+    // AnySome
+    /// <summary>
+    /// Returns whether <paramref name="enumerable"/> has any IsSome element or not.
+    /// </summary>
+    public static bool AnySome<T>(this IEnumerable<Opt<T>> enumerable)
+        => FirstSomeOrNone(enumerable).IsSome;
+    /// <summary>
+    /// Returns whether <paramref name="enumerable"/> has any IsSome element whose value satisfies the <paramref name="predicate"/> or not.
+    /// </summary>
+    public static bool AnySome<T>(this IEnumerable<Opt<T>> enumerable, Func<T, bool> predicate)
+        => FirstSomeOrNone(enumerable, predicate).IsSome;
+    // AnyOk
+    /// <summary>
+    /// Returns whether <paramref name="enumerable"/> has any IsSome element or not.
+    /// </summary>
+    public static bool AnyOk<T>(this IEnumerable<Res<T>> enumerable)
+        => FirstOkOrNone(enumerable).IsSome;
+    /// <summary>
+    /// Returns whether <paramref name="enumerable"/> has any IsSome element whose value satisfies the <paramref name="predicate"/> or not.
+    /// </summary>
+    public static bool AnyOk<T>(this IEnumerable<Res<T>> enumerable, Func<T, bool> predicate)
+        => FirstOkOrNone(enumerable, predicate).IsSome;
+
+    
+    // AllSome
+    /// <summary>
+    /// Returns whether all elements of <paramref name="enumerable"/> are IsSome or not.
+    /// </summary>
+    public static bool AllSome<T>(this IEnumerable<Opt<T>> enumerable)
+        => enumerable.All(x => x.IsSome);
+    /// <summary>
+    /// Returns whether all elements of <paramref name="enumerable"/> are IsSome unwrapped value of which satisfies the <paramref name="predicate"/> or not.
+    /// </summary>
+    public static bool AllSome<T>(this IEnumerable<Opt<T>> enumerable, Func<T, bool> predicate)
+        => enumerable.All(x => x.IsSome && predicate(x.Unwrap()));
+    // AllOk
+    /// <summary>
+    /// Returns whether all elements of <paramref name="enumerable"/> are IsOk or not.
+    /// </summary>
+    public static bool AllOk<T>(this IEnumerable<Res<T>> enumerable)
+        => enumerable.All(x => x.IsOk);
+    /// <summary>
+    /// Returns whether all elements of <paramref name="enumerable"/> are IsOk unwrapped value of which satisfies the <paramref name="predicate"/> or not.
+    /// </summary>
+    public static bool AllOk<T>(this IEnumerable<Res<T>> enumerable, Func<T, bool> predicate)
+        => enumerable.All(x => x.IsOk && predicate(x.Unwrap()));
+
+
+    // SelectSome
+    /// <summary>
+    /// Maps unwrapped values of IsSome elements of the <paramref name="enumerable"/> by the <paramref name="selector"/>.
+    /// </summary>
+    public static IEnumerable<TOut> SelectSome<T, TOut>(this IEnumerable<Opt<T>> enumerable, Func<T, TOut> selector)
+        => enumerable.Where(x => x.IsSome).Select(x => selector(x.Unwrap()));
+    // SelectOk
+    /// <summary>
+    /// Maps unwrapped values of IsOk elements of the <paramref name="enumerable"/> by the <paramref name="selector"/>.
+    /// </summary>
+    public static IEnumerable<TOut> SelectOk<T, TOut>(this IEnumerable<Res<T>> enumerable, Func<T, TOut> selector)
+        => enumerable.Where(x => x.IsOk).Select(x => selector(x.Unwrap()));
+
+
+    // WhereSome
+    /// <summary>
+    /// Filters unwrapped values of IsSome elements of the <paramref name="enumerable"/> by the <paramref name="predicate"/>.
+    /// </summary>
+    public static IEnumerable<T> WhereSome<T>(this IEnumerable<Opt<T>> enumerable, Func<T, bool> predicate)
+        => enumerable.Where(x => x.IsSome && predicate(x.Unwrap())).Select(x => x.Unwrap());
+    // WhereOk
+    /// <summary>
+    /// Filters unwrapped values of IsOk elements of the <paramref name="enumerable"/> by the <paramref name="predicate"/>.
+    /// </summary>
+    public static IEnumerable<T> WhereOk<T>(this IEnumerable<Res<T>> enumerable, Func<T, bool> predicate)
+        => enumerable.Where(x => x.IsOk && predicate(x.Unwrap())).Select(x => x.Unwrap());
+
+
+    // ForEachSome
+    /// <summary>
+    /// Applies the <paramref name="action"/> on unwrapped value of each IsSome elements of the <paramref name="enumerable"/>.
+    /// </summary>
+    public static void ForEachSome<T>(this IEnumerable<Opt<T>> enumerable, Action<T> action)
+    {
+        foreach (var item in enumerable)
+            if (item.IsSome)
+                action(item.Unwrap());
+    }
+    /// <summary>
+    /// Applies the <paramref name="action"/> on unwrapped value of each IsSome elements of the <paramref name="enumerable"/> that satisfies the <paramref name="predicate"/>.
+    /// </summary>
+    public static void ForEachSome<T>(this IEnumerable<Opt<T>> enumerable, Func<T, bool> predicate, Action<T> action)
+    {
+        foreach (var item in enumerable)
+            if (item.IsSome && predicate(item.Unwrap()))
+                action(item.Unwrap());
+    }
+    // ForEachOk
+    /// <summary>
+    /// Applies the <paramref name="action"/> on unwrapped value of each IsOk elements of the <paramref name="enumerable"/>.
+    /// </summary>
+    public static void ForEachOk<T>(this IEnumerable<Res<T>> enumerable, Action<T> action)
+    {
+        foreach (var item in enumerable)
+            if (item.IsOk)
+                action(item.Unwrap());
+    }
+    /// <summary>
+    /// Applies the <paramref name="action"/> on unwrapped value of each IsOk elements of the <paramref name="enumerable"/> that satisfies the <paramref name="predicate"/>.
+    /// </summary>
+    public static void ForEachOk<T>(this IEnumerable<Res<T>> enumerable, Func<T, bool> predicate, Action<T> action)
+    {
+        foreach (var item in enumerable)
+            if (item.IsOk && predicate(item.Unwrap()))
+                action(item.Unwrap());
+    }
 }

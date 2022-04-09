@@ -91,6 +91,13 @@ public static partial class Extensions
     /// </summary>
     public static Res<T> AsRes<T>(this Opt<T> maybe, string errorMessage = "None->Res")
         => maybe.IsNone ? Err<T>(errorMessage) : Ok(maybe.value);
+    /// <summary>
+    /// Converts Res of T to just Res; error message is transferred when IsErr; value is forgotten when IsOk.
+    /// </summary>
+    public static Res AsRes<T>(this Res<T> result)
+        => result.IsErr ? new(result.ErrorMessage.Unwrap(), null) : Ok();
+
+
     // ToRes - From Value
     /// <summary>
     /// <inheritdoc cref="Ok{T}(T)"/>
