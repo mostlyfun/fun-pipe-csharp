@@ -49,12 +49,12 @@ public static partial class Extensions
     /// Returns first IsOk element of the <paramref name="enumerable"/> if any, Err otherwise.
     /// </summary>
     public static Opt<T> FirstOkOrNone<T>(this IEnumerable<Res<T>> enumerable)
-        => enumerable.FirstOrDefault(x => x.IsOk).ToOpt();
+        => enumerable.FirstOrDefault(x => x.IsOk).AsOpt();
     /// <summary>
     /// Returns first IsOk element of the <paramref name="enumerable"/> whose unwrapped value satisfies the <paramref name="predicate"/> if any, Err otherwise.
     /// </summary>
     public static Opt<T> FirstOkOrNone<T>(this IEnumerable<Res<T>> enumerable, Func<T, bool> predicate)
-        => enumerable.FirstOrDefault(x => x.IsOk && predicate(x.Unwrap())).ToOpt();
+        => enumerable.FirstOrDefault(x => x.IsOk && predicate(x.Unwrap())).AsOpt();
 
 
     // Last
@@ -84,10 +84,10 @@ public static partial class Extensions
     /// Returns last IsOk element of the <paramref name="enumerable"/> if any, Err otherwise.
     /// </summary>
     public static Opt<T> LastOkOrNone<T>(this IEnumerable<Res<T>> enumerable)
-        => enumerable.LastOrDefault(x => x.IsOk).ToOpt();
+        => enumerable.LastOrDefault(x => x.IsOk).AsOpt();
     /// <summary>
     /// Returns last IsOk element of the <paramref name="enumerable"/> whose unwrapped value satisfies the <paramref name="predicate"/> if any, Err otherwise.
     /// </summary>
     public static Opt<T> LastOkOrNone<T>(this IEnumerable<Res<T>> enumerable, Func<T, bool> predicate)
-        => enumerable.LastOrDefault(x => x.IsOk && predicate(x.Unwrap())).ToOpt();
+        => enumerable.LastOrDefault(x => x.IsOk && predicate(x.Unwrap())).AsOpt();
 }

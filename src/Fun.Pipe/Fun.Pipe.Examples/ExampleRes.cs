@@ -201,9 +201,9 @@ public static class ExampleRes
         Assert(sideEffect == 1f, "RunIfErr must be run when IsErr, adding 1f to the sideEffect");
 
         // Res<T>.ToOpt: Err->None, Ok(x)->Some(x)
-        var zz = merlin.ToOpt();
-        Assert(merlin.ToOpt() == Some(new Wizard("Merlin", 42)), "ToOpt must map Ok(x) to Some(x)");
-        Assert(wizardFromNull.ToOpt().IsNone, "ToOpt must map Err to None");
+        var zz = merlin.AsOpt();
+        Assert(merlin.AsOpt() == Some(new Wizard("Merlin", 42)), "ToOpt must map Ok(x) to Some(x)");
+        Assert(wizardFromNull.AsOpt().IsNone, "ToOpt must map Err to None");
 
         // Res collections
         var errPersons = new List<Res<Wizard>>() { wizardFromException, Err<Wizard>("problem in grabbing wizard") };  // Err, Err

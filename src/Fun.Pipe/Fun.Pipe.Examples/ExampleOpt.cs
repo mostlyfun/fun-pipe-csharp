@@ -127,10 +127,10 @@ public static class ExampleOpt
             return new(Name: parts[0], NbSpells: int.Parse(parts[1]));
         }
         Res<Wizard> okWizard = TryMap(() => ParseWizardMaybe("Merlin-42"));
-        Opt<Wizard> merlin = okWizard.ToOpt();
+        Opt<Wizard> merlin = okWizard.AsOpt();
         Assert(merlin == Some(new Wizard("Merlin", 42)), "ToOpt must map Ok(x) to Some(x)");
         Res<Wizard> errWizard = TryMap(() => ParseWizardMaybe("badwizardinput"));
-        Opt<Wizard> noneWizard = errWizard.ToOpt();
+        Opt<Wizard> noneWizard = errWizard.AsOpt();
         Assert(noneWizard.IsNone, "ToOpt must map Err to None");
 
 

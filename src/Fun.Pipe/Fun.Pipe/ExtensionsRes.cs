@@ -89,7 +89,7 @@ public static partial class Extensions
     /// <summary>
     /// Converts Opt to Res: maps <paramref name="maybe"/> to Ok of its value when IsSome; to Err when IsNone.
     /// </summary>
-    public static Res<T> ToRes<T>(this Opt<T> maybe, string errorMessage = "None->Res")
+    public static Res<T> AsRes<T>(this Opt<T> maybe, string errorMessage = "None->Res")
         => maybe.IsNone ? Err<T>(errorMessage) : Ok(maybe.value);
     // ToRes - From Value
     /// <summary>
@@ -177,7 +177,15 @@ public static partial class Extensions
     /// <summary>
     /// <inheritdoc cref="ThrowIfErr(Res, string)"/>
     /// </summary>
-    public static Res<T> ThrowIfErr<T>(this Res<T> result, string errorMessage) { if (result.IsErr) { result = result.MsgIfErr(errorMessage); throw new ArgumentException(result.ErrorMessage.value); } return result; }
+    public static Res<T> ThrowIfErr<T>(this Res<T> result, string errorMessage)
+    {
+        if (result.IsErr)
+        {
+            result = result.MsgIfErr(errorMessage);
+            throw new ArgumentException(result.ErrorMessage.value);
+        }
+        return result;
+    }
     /// <summary>
     /// <inheritdoc cref="LogIfErr(Res)"/>
     /// </summary>

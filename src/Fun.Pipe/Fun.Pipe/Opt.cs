@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace Fun;
 
 /// <summary>
@@ -68,7 +70,7 @@ public readonly struct Opt<T> : IEquatable<T>, IEquatable<Opt<T>>, IEquatable<Re
     {
         if (IsNone)
             throw new ArgumentException("tried to unwrap None");
-        return value;
+        return value!;
     }
     /// <summary>
     /// Returns the value when <see cref="IsSome"/>; or returns the <paramref name="fallbackValue"/> when <see cref="IsNone"/>.
@@ -76,19 +78,19 @@ public readonly struct Opt<T> : IEquatable<T>, IEquatable<Opt<T>>, IEquatable<Re
     /// <param name="fallbackValue"></param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T Unwrap(T fallbackValue)
-        => IsNone ? fallbackValue : value;
+        => IsNone ? fallbackValue : value!;
     /// <summary>
     /// Returns the value when <see cref="IsSome"/>; or returns <paramref name="lazyFallbackValue"/>() when <see cref="IsNone"/>.
     /// </summary>
     /// <param name="lazyFallbackValue"></param>
     public T Unwrap(Func<T> lazyFallbackValue)
-        => IsNone ? lazyFallbackValue() : value;
+        => IsNone ? lazyFallbackValue() : value!;
     /// <summary>
     /// Returns the value when <see cref="IsSome"/>; or returns <paramref name="lazyFallbackValue"/>() when <see cref="IsNone"/>.
     /// </summary>
     /// <param name="lazyFallbackValue"></param>
     public Task<T> Unwrap(Func<Task<T>> lazyFallbackValue)
-        => IsNone ? lazyFallbackValue() : Task.FromResult(value);
+        => IsNone ? lazyFallbackValue() : Task.FromResult(value!);
     /// <summary>
     /// Returns the value when <see cref="IsSome"/>; throws with the given <paramref name="errorMessage"/> when <see cref="IsNone"/>.
     /// </summary>
@@ -96,7 +98,7 @@ public readonly struct Opt<T> : IEquatable<T>, IEquatable<Opt<T>>, IEquatable<Re
     {
         if (IsNone)
             throw new ArgumentException(errorMessage);
-        return value;
+        return value!;
     }
 
 

@@ -85,26 +85,26 @@ public readonly struct Res<T> : IEquatable<T>, IEquatable<Opt<T>>, IEquatable<Re
     {
         if (errorMessage != null)
             throw new ArgumentException("tried to unwrap None");
-        return value;
+        return value!;
     }
     /// <summary>
     /// Returns the value when <see cref="IsOk"/>; or returns the <paramref name="fallbackValue"/> when <see cref="IsErr"/>.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T Unwrap(T fallbackValue)
-        => errorMessage == null ? value : fallbackValue;
+        => errorMessage == null ? value! : fallbackValue;
     /// <summary>
     /// Returns the value when <see cref="IsOk"/>; or returns <paramref name="lazyFallbackValue"/>() when <see cref="IsErr"/>.
     /// </summary>
     /// <param name="lazyFallbackValue"></param>
     public T Unwrap(Func<T> lazyFallbackValue)
-        => IsErr ? lazyFallbackValue() : value;
+        => IsErr ? lazyFallbackValue() : value!;
     /// <summary>
     /// Returns the value when <see cref="IsOk"/>; or returns <paramref name="lazyFallbackValue"/>() when <see cref="IsErr"/>.
     /// </summary>
     /// <param name="lazyFallbackValue"></param>
     public Task<T> Unwrap(Func<Task<T>> lazyFallbackValue)
-        => IsErr ? lazyFallbackValue() : Task.FromResult(value);
+        => IsErr ? lazyFallbackValue() : Task.FromResult(value!);
     /// <summary>
     /// <inheritdoc cref="Res.MsgIfErr(string)"/>
     /// </summary>
@@ -112,7 +112,7 @@ public readonly struct Res<T> : IEquatable<T>, IEquatable<Opt<T>>, IEquatable<Re
     {
         if (this.errorMessage == null)
             return this;
-        string msg = this.errorMessage + Environment.NewLine + ": " + Res.GetErrorMessage(errorMessage, null);
+        string msg = this.errorMessage + " " + Res.GetErrorMessage(errorMessage, null);
         return new(msg, null);
     }
     /// <summary>
@@ -122,7 +122,7 @@ public readonly struct Res<T> : IEquatable<T>, IEquatable<Opt<T>>, IEquatable<Re
     {
         if (this.errorMessage == null)
             return this;
-        string msg = this.errorMessage + Environment.NewLine + ": " + Res.GetErrorMessage(errorMessage, when);
+        string msg = this.errorMessage + " " + Res.GetErrorMessage(errorMessage, when);
         return new(msg, null);
     }
 

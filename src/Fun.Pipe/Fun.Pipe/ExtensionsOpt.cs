@@ -27,7 +27,7 @@ public static partial class Extensions
     /// <summary>
     /// Converts Res to Opt: maps <paramref name="result"/> to Some of its value when IsOk; to None when IsErr.
     /// </summary>
-    public static Opt<T> ToOpt<T>(this Res<T> result)
+    public static Opt<T> AsOpt<T>(this Res<T> result)
         => result.IsErr ? None<T>() : Some(result.value);
     // ToOpt - From Value
     /// <summary>
