@@ -1,5 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
-
 namespace Fun;
 
 /// <summary>
@@ -14,7 +12,10 @@ public readonly struct Opt<T> : IEquatable<T>, IEquatable<Opt<T>>, IEquatable<Re
     /// True if the option is None.
     /// </summary>
     public bool IsNone
-        => !IsSome;
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => !IsSome;
+    }
     // Propcd 
     /// <summary>
     /// True if the option is Some value, which can be obtained by <see cref="Unwrap()"/> or <see cref="Unwrap(T)"/>.

@@ -1,4 +1,5 @@
-﻿namespace Fun;
+﻿using System.Collections.Concurrent;
+namespace Fun;
 
 /// <summary>
 /// Static extension or utility methods for Opt, Res, or Pipe.
@@ -14,12 +15,28 @@ public static partial class Extensions
     public static IEnumerable<T> UnwrapValues<T>(this IEnumerable<Opt<T>> collection)
         => collection.Where(x => x.IsSome).Select(x => x.Unwrap());
     /// <summary>
+    /// Returns IEnumerable yielding unwrapped values of elements that are <see cref="Opt{T}.IsSome"/> and satisfies the given <paramref name="predicate"/>.
+    /// </summary>
+    /// <typeparam name="T">Underlying type of the Opt.</typeparam>
+    /// <param name="collection">Collection of opt values.</param>
+    /// <param name="predicate">Predicate to filter values of Some elements of the collection.</param>
+    public static IEnumerable<T> UnwrapValues<T>(this IEnumerable<Opt<T>> collection, Func<T, bool> predicate)
+        => collection.Where(x => x.IsSome && predicate(x.Unwrap())).Select(x => x.Unwrap());
+    /// <summary>
     /// Returns IEnumerable yielding unwrapped values of elements that are <see cref="Res{T}.IsOk"/>.
     /// </summary>
     /// <typeparam name="T">Underlying type of the Res.</typeparam>
     /// <param name="collection">Collection of result values.</param>
     public static IEnumerable<T> UnwrapValues<T>(this IEnumerable<Res<T>> collection)
         => collection.Where(x => x.IsOk).Select(x => x.Unwrap());
+    /// <summary>
+    /// Returns IEnumerable yielding unwrapped values of elements that are <see cref="Res{T}.IsOk"/> and satisfies the given <paramref name="predicate"/>.
+    /// </summary>
+    /// <typeparam name="T">Underlying type of the Opt.</typeparam>
+    /// <param name="collection">Collection of opt values.</param>
+    /// <param name="predicate">Predicate to filter values of Some elements of the collection.</param>
+    public static IEnumerable<T> UnwrapValues<T>(this IEnumerable<Res<T>> collection, Func<T, bool> predicate)
+        => collection.Where(x => x.IsOk && predicate(x.Unwrap())).Select(x => x.Unwrap());
 
 
     // First
@@ -140,6 +157,30 @@ public static partial class Extensions
         => enumerable.All(x => x.IsOk && predicate(x.Unwrap()));
 
 
+    // CountSome
+    /// <summary>
+    /// Returns the number of IsSome elements of the <paramref name="enumerable"/>.
+    /// </summary>
+    public static int CountSome<T>(this IEnumerable<Opt<T>> enumerable)
+        => enumerable.Count(x => x.IsSome);
+    /// <summary>
+    /// Returns the number of IsSome elements of the <paramref name="enumerable"/> unwrapped values of which satisfy the <paramref name="predicate"/>.
+    /// </summary>
+    public static int CountSome<T>(this IEnumerable<Opt<T>> enumerable, Func<T, bool> predicate)
+        => enumerable.Count(x => x.IsSome && predicate(x.Unwrap()));
+    // CountOk
+    /// <summary>
+    /// Returns the number of IsOk elements of the <paramref name="enumerable"/>.
+    /// </summary>
+    public static int CountOk<T>(this IEnumerable<Res<T>> enumerable)
+        => enumerable.Count(x => x.IsOk);
+    /// <summary>
+    /// Returns the number of IsOk elements of the <paramref name="enumerable"/> unwrapped values of which satisfy the <paramref name="predicate"/>.
+    /// </summary>
+    public static int CountOk<T>(this IEnumerable<Res<T>> enumerable, Func<T, bool> predicate)
+        => enumerable.Count(x => x.IsOk && predicate(x.Unwrap()));
+
+
     // SelectSome
     /// <summary>
     /// Maps unwrapped values of IsSome elements of the <paramref name="enumerable"/> by the <paramref name="selector"/>.
@@ -206,4 +247,17 @@ public static partial class Extensions
             if (item.IsOk && predicate(item.Unwrap()))
                 action(item.Unwrap());
     }
+
+
+    // TryGetValue
+    /// <summary>
+    /// Returns Some of value from <paramref name="dictionary"/> with the given <paramref name="key"/> if exists; None if the key is absent.
+    /// </summary>
+    public static Opt<TValue> GetValueOrNone<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, TKey key)
+    { bool s = dictionary.TryGetValue(key, out var val); return s ? Some(val) : None<TValue>(); }
+    /// <summary>
+    /// Returns Some of value from <paramref name="dictionary"/> with the given <paramref name="key"/> if exists; None if the key is absent.
+    /// </summary>
+    public static Opt<TValue> GetValueOrNone<TKey, TValue>(this ConcurrentDictionary<TKey, TValue> dictionary, TKey key)
+    { bool s = dictionary.TryGetValue(key, out var val); return s ? Some(val) : None<TValue>(); }
 }

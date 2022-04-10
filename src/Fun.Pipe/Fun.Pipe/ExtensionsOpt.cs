@@ -1,5 +1,3 @@
-using System.Collections.Concurrent;
-using System.Threading.Tasks;
 namespace Fun;
 
 /// <summary>
@@ -200,11 +198,26 @@ public static partial class Extensions
     /// </summary>
     public static Task<Opt<TOut>> MapAsync<T, TOut>(this Opt<T> maybe, Func<T, Task<Opt<TOut>>> map)
         => maybe.IsNone ? Task.FromResult(None<TOut>()) : map(maybe.value);
-  
+
     #endregion
 
 
     // TryParse
+    /// <summary>
+    /// Returns Some of parsed value from <paramref name="text"/> using the <paramref name="parser"/> if succeeds; None if fails.
+    /// Parser is called within a try-catch block, where exceptions are mapped to None.
+    /// </summary>
+    public static Opt<T> ParseOrNone<T>(this string text, Func<string, T> parser)
+    {
+        try
+        {
+            return parser(text);
+        }
+        catch
+        {
+            return default;
+        }
+    }
     /// <summary>
     /// Returns Some of parsed value from <paramref name="text"/> if succeeds; None if fails.
     /// </summary>
@@ -305,17 +318,4 @@ public static partial class Extensions
     /// </summary>
     public static Opt<TimeOnly> ParseTimeOnlyOrNone(this ReadOnlySpan<char> text)
     { bool s = TimeOnly.TryParse(text, out var val); return s ? Some(val) : None<TimeOnly>(); }
-
-
-    // TryGetValue
-    /// <summary>
-    /// Returns Some of value from <paramref name="dictionary"/> with the given <paramref name="key"/> if exists; None if the key is absent.
-    /// </summary>
-    public static Opt<TValue> GetValueOrNone<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, TKey key)
-    { bool s = dictionary.TryGetValue(key, out var val); return s ? Some(val) : None<TValue>(); }
-    /// <summary>
-    /// Returns Some of value from <paramref name="dictionary"/> with the given <paramref name="key"/> if exists; None if the key is absent.
-    /// </summary>
-    public static Opt<TValue> GetValueOrNone<TKey, TValue>(this ConcurrentDictionary<TKey, TValue> dictionary, TKey key)
-    { bool s = dictionary.TryGetValue(key, out var val); return s ? Some(val) : None<TValue>(); }
 }

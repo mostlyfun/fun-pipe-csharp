@@ -15,12 +15,18 @@ public readonly struct Res<T> : IEquatable<T>, IEquatable<Opt<T>>, IEquatable<Re
     /// True if the result is Ok; false otherwise.
     /// </summary>
     public bool IsOk
-        => errorMessage == null;
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => errorMessage == null;
+    }
     /// <summary>
     /// True if the result is Err; false otherwise.
     /// </summary>
     public bool IsErr
-        => errorMessage != null;
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => errorMessage != null;
+    }
     /// <summary>
     /// Returns the underlying error message if <see cref="IsErr"/>; None if <see cref="IsOk"/>;
     /// </summary>
@@ -62,12 +68,12 @@ public readonly struct Res<T> : IEquatable<T>, IEquatable<Opt<T>>, IEquatable<Re
     }
     internal Res(string errorMessage, string when)
     {
-        this.value = default;
+        value = default;
         this.errorMessage = Res.GetErrorMessage(errorMessage, when);
     }
     internal Res(Exception exception, string when)
     {
-        this.value = default;
+        value = default;
         errorMessage = Res.GetExceptionMessage(exception, when);
     }
     /// <summary>

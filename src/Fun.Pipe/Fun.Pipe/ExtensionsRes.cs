@@ -1,6 +1,5 @@
 ﻿using System.Net;
 using System.Net.Http;
-using System.Threading.Tasks;
 namespace Fun;
 
 /// <summary>
@@ -239,12 +238,28 @@ public static partial class Extensions
 
     // Match - Res
     /// <summary>
+    /// Maps <paramref name="result"/> into <paramref name="ok"/> whenever result.IsOk; and into <paramref name="err"/>(result.ErrorMessage.Unwrap()) otherwise.
+    /// </summary>
+    public static TOut Match<TOut>(this Res result, TOut ok, Func<string, TOut> err)
+    {
+        if (result.IsOk) return ok;
+        else return err(result.ErrorMessage.Unwrap());
+    }
+    /// <summary>
     /// Maps <paramref name="result"/> into <paramref name="ok"/>() whenever result.IsOk; and into <paramref name="err"/>(result.ErrorMessage.Unwrap()) otherwise.
     /// </summary>
     public static TOut Match<TOut>(this Res result, Func<TOut> ok, Func<string, TOut> err)
     {
         if (result.IsOk) return ok();
         else return err(result.ErrorMessage.Unwrap());
+    }
+    /// <summary>
+    /// Maps <paramref name="result"/> into <paramref name="ok"/> whenever result.IsOk; and into <paramref name="err"/> otherwise.
+    /// </summary>
+    public static TOut Match<TOut>(this Res result, TOut ok, TOut err)
+    {
+        if (result.IsOk) return ok;
+        else return err;
     }
     /// <summary>
     /// Maps <paramref name="result"/> into <paramref name="ok"/>() whenever result.IsOk; and into <paramref name="err"/> otherwise.
@@ -257,7 +272,7 @@ public static partial class Extensions
     /// <summary>
     /// Executes <paramref name="ok"/>() whenever <paramref name="result"/>.IsOk; <paramref name="err"/>(result.ErrorMessage.Unwrap()) otherwise.
     /// </summary>
-    public static void Match<T>(this Res result, Action ok, Action<string> err)
+    public static void Match(this Res result, Action ok, Action<string> err)
     {
         if (result.IsOk) ok();
         else err(result.ErrorMessage.Unwrap());
@@ -265,7 +280,7 @@ public static partial class Extensions
     /// <summary>
     /// Executes <paramref name="ok"/>() whenever <paramref name="result"/>.IsOk; <paramref name="err"/>() otherwise.
     /// </summary>
-    public static void Match<T>(this Res result, Action ok, Action err)
+    public static void Match(this Res result, Action ok, Action err)
     {
         if (result.IsOk) ok();
         else err();

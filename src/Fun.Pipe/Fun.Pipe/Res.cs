@@ -15,12 +15,18 @@ public readonly struct Res : IEquatable<Res>
     /// True if the result is Ok; false otherwise.
     /// </summary>
     public bool IsOk
-        => errorMessage == null;
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => errorMessage == null;
+    }
     /// <summary>
     /// True if the result is Err; false otherwise.
     /// </summary>
     public bool IsErr
-        => errorMessage != null;
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => errorMessage != null;
+    }
     /// <summary>
     /// Returns the underlying error message which is Some when the result <see cref="IsErr"/>; None when <see cref="IsOk"/>;
     /// </summary>
@@ -34,10 +40,13 @@ public readonly struct Res : IEquatable<Res>
     /// Parameterless ctor returns Ok; use 'Fun.Extensions.Ok' or `Fun.Extensions.Err` to construct options.
     /// Better to add `using static Fun.Extensions` and use `Ok` and `Err` directly.
     /// </summary>
-    public Res() => errorMessage = "default-ctor-error";
+    public Res()
+    {
+        errorMessage = "default-ctor-error";
+    }
     internal Res(string errorMessage) => this.errorMessage = errorMessage;
     internal Res(string errorMessage, string when) => this.errorMessage = GetErrorMessage(errorMessage, when);
-    internal Res(Exception exception, string when) => this.errorMessage = GetExceptionMessage(exception, when);
+    internal Res(Exception exception, string when) => errorMessage = GetExceptionMessage(exception, when);
 
 
     // Method
